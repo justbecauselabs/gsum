@@ -91,6 +91,12 @@ if ! command -v gemini &> /dev/null; then
         mv "$HOME/bin/gemini" "$HOME/bin/gemini.mock"
     fi
     
+    # Ensure bin directory exists
+    mkdir -p "$HOME/bin"
+    
+    # Add to PATH if not already there
+    export PATH="$HOME/bin:$PATH"
+    
     # Create mock gemini
     cat > "$HOME/bin/gemini" << 'EOF'
 #!/bin/bash
