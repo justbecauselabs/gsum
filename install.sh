@@ -43,33 +43,38 @@ echo "📍 Detected shell: $SHELL_NAME"
 echo
 echo "Checking prerequisites..."
 
-# Check for Claude
-if ! command -v claude &> /dev/null; then
-    echo "${YELLOW}⚠️  Claude CLI not found${NC}"
-    echo "   Please install Claude Desktop and the CLI first:"
-    echo "   https://claude.ai/download"
-    echo
-    read -p "Continue anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+# Check if running in CI
+if [ -n "$CI" ]; then
+    echo "${YELLOW}⚠️  Running in CI environment - skipping prerequisite checks${NC}"
 else
-    echo "${GREEN}✓${NC} Claude CLI found"
-fi
+    # Check for Claude
+    if ! command -v claude &> /dev/null; then
+        echo "${YELLOW}⚠️  Claude CLI not found${NC}"
+        echo "   Please install Claude Desktop and the CLI first:"
+        echo "   https://claude.ai/download"
+        echo
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    else
+        echo "${GREEN}✓${NC} Claude CLI found"
+    fi
 
-# Check for Gemini
-if ! command -v gemini &> /dev/null; then
-    echo "${YELLOW}⚠️  Gemini CLI not found${NC}"
-    echo "   Please install Gemini CLI with MCP support first"
-    echo
-    read -p "Continue anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
+    # Check for Gemini
+    if ! command -v gemini &> /dev/null; then
+        echo "${YELLOW}⚠️  Gemini CLI not found${NC}"
+        echo "   Please install Gemini CLI with MCP support first"
+        echo
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    else
+        echo "${GREEN}✓${NC} Gemini CLI found"
     fi
-else
-    echo "${GREEN}✓${NC} Gemini CLI found"
 fi
 
 # Check for Git
