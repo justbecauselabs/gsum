@@ -3,6 +3,7 @@
 # Smart directory summarizer that checks git state before regenerating
 
 TARGET_DIR="${1:-.}"
+
 DIFF_THRESHOLD=500  # Lines of diff before we consider it "non-trivial"
 
 # Function to get current git branch name
@@ -45,14 +46,15 @@ is_diff_trivial() {
     local old_hash="$1"
     local current_hash="$2"
     
-    # Count lines of diff
-    local diff_lines=$(cd "$TARGET_DIR" && git diff "$old_hash..$current_hash" --stat | tail -1 | awk '{print $4 + $6}')
+    # Count lines of diff - get the actual lines changed
+    local diff_output=$(cd "$TARGET_DIR" && git diff "$old_hash..$current_hash" --numstat | awk '{added+=$1; deleted+=$2} END {print added+deleted}')
     
-    if [[ -z "$diff_lines" ]]; then
-        diff_lines=0
+    if [[ -z "$diff_output" ]] || [[ "$diff_output" == "" ]]; then
+        diff_output=0
     fi
     
-    [[ $diff_lines -lt $DIFF_THRESHOLD ]]
+    
+    [[ $diff_output -lt $DIFF_THRESHOLD ]]
 }
 
 # Main logic
