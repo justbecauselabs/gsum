@@ -33,6 +33,8 @@ update:
 	@cp -f /tmp/gsum-update/gsum/bin/smart-gsum ~/bin/smart-gsum
 	@cp -f /tmp/gsum-update/gsum/bin/gsummarize-wrapper ~/bin/gsummarize-wrapper
 	@cp -f /tmp/gsum-update/gsum/claude-commands/gsum.md ~/.claude/commands/gsum.md
+	@cp -f /tmp/gsum-update/gsum/claude-commands/gsum-save.md ~/.claude/commands/gsum-save.md
+	@cp -f /tmp/gsum-update/gsum/claude-commands/gsum-plan.md ~/.claude/commands/gsum-plan.md
 	@cp -rf /tmp/gsum-update/gsum/mcp-server ~/bin/gsum-mcp-server
 	
 	# Make executable
