@@ -81,35 +81,67 @@ fi
 echo "${GREEN}✓${NC} All prerequisites found"
 echo
 
-# Create mock gemini if needed
+# Create mock gemini for testing
 MOCK_CREATED=false
-if ! command -v gemini &> /dev/null; then
-    echo "${YELLOW}⚠️  Gemini not found, creating mock for testing${NC}"
-    
-    # Backup existing gemini if it exists
-    if [ -f "$HOME/bin/gemini" ]; then
-        mv "$HOME/bin/gemini" "$HOME/bin/gemini.mock"
-    fi
-    
-    # Ensure bin directory exists
-    mkdir -p "$HOME/bin"
-    
-    # Add to PATH if not already there
-    export PATH="$HOME/bin:$PATH"
-    
-    # Create mock gemini
-    cat > "$HOME/bin/gemini" << 'EOF'
+echo "${YELLOW}⚠️  Creating mock gemini for testing${NC}"
+
+# Backup existing gemini if it exists in HOME/bin
+if [ -f "$HOME/bin/gemini" ]; then
+    mv "$HOME/bin/gemini" "$HOME/bin/gemini.mock"
+fi
+
+# Ensure bin directory exists
+mkdir -p "$HOME/bin"
+
+# Add to PATH at the beginning to ensure our mock takes precedence
+export PATH="$HOME/bin:$PATH"
+
+# Create mock gemini
+cat > "$HOME/bin/gemini" << 'EOF'
 #!/bin/bash
 # Mock gemini for testing
 
-# Simple mock that creates a directory summary when called with --yolo
+# Simple mock that creates appropriate output when called with --yolo
 if [[ "$*" == *"--yolo"* ]]; then
-    # Read from stdin to consume the heredoc
-    cat > /dev/null
+    # Read from stdin to get the prompt
+    prompt=$(cat)
     
-    # Smart-gsum calls gsummarize-wrapper which changes to target directory
-    # So we're already in the right directory, just create the file
-    cat > DIRECTORY_SUMMARY.md << 'EOFSUM'
+    # Check if this is for an implementation plan
+    if echo "$prompt" | grep -q "IMPLEMENTATION PLAN"; then
+        # Generate implementation plan to stdout
+        cat << 'EOFPLAN'
+# IMPLEMENTATION PLAN
+
+## TASK OVERVIEW
+This is a mock implementation plan for testing.
+
+## TECHNICAL APPROACH
+- Use modern React patterns
+- Implement proper state management
+- Follow existing code conventions
+
+## IMPLEMENTATION STEPS
+1. Create new components
+2. Update existing files
+3. Add tests
+
+## CODE STRUCTURE
+- New components in src/components/
+- Tests in src/__tests__/
+
+## TESTING PLAN
+- Unit tests for all components
+- Integration tests for workflows
+
+## ESTIMATED EFFORT
+- Development: 2 days
+- Testing: 1 day
+- Total: 3 days
+EOFPLAN
+    else
+        # Generate regular summary - write to DIRECTORY_SUMMARY.md in current directory
+        # Note: gsummarize-wrapper has already cd'd to the target directory
+        cat > ./DIRECTORY_SUMMARY.md << 'EOFSUM'
 # Directory Summary Report
 
 Generated on: 2024-01-01
@@ -147,13 +179,12 @@ This is a test project with a simple React component structure.
 - Purpose: Simple button component for testing
 
 EOFSUM
-    
-    echo "Mock Gemini: Created DIRECTORY_SUMMARY.md"
+        echo "Created DIRECTORY_SUMMARY.md successfully" >&2
+    fi
 fi
 EOF
-    chmod +x "$HOME/bin/gemini"
-    MOCK_CREATED=true
-fi
+chmod +x "$HOME/bin/gemini"
+MOCK_CREATED=true
 
 # Create test environment
 echo
@@ -209,7 +240,7 @@ EOF
 cat > .gitignore << 'EOF'
 node_modules/
 *.log
-DIRECTORY_SUMMARY*.md
+IMPLEMENTATION_PLAN_*.gsum.md
 EOF
 
 # Initial commit
@@ -223,15 +254,29 @@ echo
 echo "Running tests..."
 echo
 
-# Test 1: First run should generate summary
-echo "=== Test 1: First run ==="
-run_test "First run generates summary" \
+# Test 1: Ephemeral mode (default)
+echo "=== Test 1: Ephemeral mode (default) ==="
+run_test "Ephemeral mode outputs to stdout" \
     "$HOME/bin/smart-gsum ." \
-    "No existing summary found"
+    "Architecture Overview"
+
+# Test 2: Ephemeral mode with --ephemeral flag
+echo
+echo "=== Test 2: Ephemeral mode with explicit flag ==="
+run_test "Ephemeral mode with flag outputs to stdout" \
+    "$HOME/bin/smart-gsum --ephemeral ." \
+    "Architecture Overview"
+
+# Test 3: Save mode creates ARCHITECTURE.gsum.md
+echo
+echo "=== Test 3: Save mode ==="
+run_test "Save mode creates ARCHITECTURE.gsum.md" \
+    "$HOME/bin/smart-gsum --save ." \
+    "Successfully generated ARCHITECTURE.gsum.md"
 
 # Verify file was created
-echo -n "Verifying DIRECTORY_SUMMARY.md exists... "
-if [ -f "DIRECTORY_SUMMARY.md" ]; then
+echo -n "Verifying ARCHITECTURE.gsum.md exists... "
+if [ -f "ARCHITECTURE.gsum.md" ]; then
     echo "${GREEN}✓ PASSED${NC}"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
@@ -243,186 +288,42 @@ fi
 TESTS_RUN=$((TESTS_RUN + 1))
 
 # Verify git hash was added
-echo -n "Verifying git hash in summary... "
-if [ -f "DIRECTORY_SUMMARY.md" ] && grep -q "<!-- git-hash:" "DIRECTORY_SUMMARY.md"; then
+echo -n "Verifying git hash in ARCHITECTURE.gsum.md... "
+if [ -f "ARCHITECTURE.gsum.md" ] && grep -q "<!-- git-hash:" "ARCHITECTURE.gsum.md"; then
     echo "${GREEN}✓ PASSED${NC}"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
     echo "${RED}✗ FAILED${NC}"
-    if [ -f "DIRECTORY_SUMMARY.md" ]; then
+    if [ -f "ARCHITECTURE.gsum.md" ]; then
         echo "  Last 5 lines of summary:"
-        tail -5 DIRECTORY_SUMMARY.md | sed 's/^/    /'
+        tail -5 ARCHITECTURE.gsum.md | sed 's/^/    /'
     fi
     TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 TESTS_RUN=$((TESTS_RUN + 1))
 
-# Test 2: No changes should load cached
+# Test 4: Save mode with no changes
 echo
-echo "=== Test 2: No changes ==="
+echo "=== Test 4: Save mode with no changes ==="
 sleep 1  # Ensure different timestamp
-run_test "No changes loads cached summary" \
-    "$HOME/bin/smart-gsum ." \
-    "Summary is up to date"
+run_test "Save mode with no changes" \
+    "$HOME/bin/smart-gsum --save ." \
+    "ARCHITECTURE.gsum.md is up to date"
 
-# Test 3: Minor changes should show diff
+# Test 5: Save mode with minor changes
 echo
-echo "=== Test 3: Minor changes ==="
+echo "=== Test 5: Save mode with minor changes ==="
 echo "// New comment" >> src/components/Button.js
 git add -A
 git commit -m "Add comment" --quiet
 
-run_test "Minor changes show diff" \
-    "$HOME/bin/smart-gsum ." \
+run_test "Save mode with minor changes" \
+    "$HOME/bin/smart-gsum --save ." \
     "Changes are trivial"
 
-# Test 4: Major changes should regenerate
+# Test 6: Save mode with major changes
 echo
-echo "=== Test 4: Major changes ==="
-
-# For testing, we'll modify the existing file significantly
-# First, let's save the current state
-cp src/components/Button.js src/components/Button.js.bak
-
-# Replace with much larger content (100+ lines)
-cat > src/components/Button.js << 'EOFLARGE'
-import React from 'react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import PropTypes from 'prop-types';
-
-// Button component with many features
-export function Button({ 
-    label, 
-    onClick, 
-    variant = 'primary',
-    size = 'medium',
-    disabled = false,
-    loading = false,
-    icon = null,
-    tooltip = '',
-    ariaLabel = '',
-    className = '',
-    style = {},
-    children,
-    ...rest 
-}) {
-    const [isHovered, setIsHovered] = useState(false);
-    const [isPressed, setIsPressed] = useState(false);
-    const [clickCount, setClickCount] = useState(0);
-    
-    // Track button analytics
-    useEffect(() => {
-        if (clickCount > 0) {
-            console.log(`Button clicked ${clickCount} times`);
-        }
-    }, [clickCount]);
-    
-    // Handle click with analytics
-    const handleClick = useCallback((e) => {
-        if (disabled || loading) return;
-        
-        setClickCount(prev => prev + 1);
-        
-        if (onClick) {
-            onClick(e);
-        }
-    }, [disabled, loading, onClick]);
-    
-    // Compute button classes
-    const buttonClasses = useMemo(() => {
-        const classes = ['button'];
-        
-        classes.push(`button--${variant}`);
-        classes.push(`button--${size}`);
-        
-        if (disabled) classes.push('button--disabled');
-        if (loading) classes.push('button--loading');
-        if (isHovered) classes.push('button--hovered');
-        if (isPressed) classes.push('button--pressed');
-        
-        if (className) classes.push(className);
-        
-        return classes.join(' ');
-    }, [variant, size, disabled, loading, isHovered, isPressed, className]);
-    
-    // Render loading spinner
-    const renderSpinner = () => (
-        <span className="button__spinner">
-            <svg className="spinner" viewBox="0 0 50 50">
-                <circle className="path" cx="25" cy="25" r="20" fill="none" strokeWidth="5"></circle>
-            </svg>
-        </span>
-    );
-    
-    // Render icon
-    const renderIcon = () => {
-        if (!icon) return null;
-        
-        return <span className="button__icon">{icon}</span>;
-    };
-    
-    return (
-        <button
-            className={buttonClasses}
-            onClick={handleClick}
-            disabled={disabled || loading}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onMouseDown={() => setIsPressed(true)}
-            onMouseUp={() => setIsPressed(false)}
-            aria-label={ariaLabel || label}
-            title={tooltip}
-            style={style}
-            {...rest}
-        >
-            {loading && renderSpinner()}
-            {!loading && renderIcon()}
-            <span className="button__label">
-                {children || label}
-            </span>
-        </button>
-    );
-}
-
-Button.propTypes = {
-    label: PropTypes.string,
-    onClick: PropTypes.func,
-    variant: PropTypes.oneOf(['primary', 'secondary', 'danger', 'success', 'warning']),
-    size: PropTypes.oneOf(['small', 'medium', 'large']),
-    disabled: PropTypes.bool,
-    loading: PropTypes.bool,
-    icon: PropTypes.node,
-    tooltip: PropTypes.string,
-    ariaLabel: PropTypes.string,
-    className: PropTypes.string,
-    style: PropTypes.object,
-    children: PropTypes.node,
-};
-
-// Export additional button variants
-export const PrimaryButton = (props) => <Button {...props} variant="primary" />;
-export const SecondaryButton = (props) => <Button {...props} variant="secondary" />;
-export const DangerButton = (props) => <Button {...props} variant="danger" />;
-export const SuccessButton = (props) => <Button {...props} variant="success" />;
-export const WarningButton = (props) => <Button {...props} variant="warning" />;
-
-// Button group component
-export function ButtonGroup({ children, className = '', ...props }) {
-    return (
-        <div className={`button-group ${className}`} {...props}>
-            {children}
-        </div>
-    );
-}
-
-ButtonGroup.propTypes = {
-    children: PropTypes.node.isRequired,
-    className: PropTypes.string,
-};
-
-// Export everything
-export default Button;
-EOFLARGE
+echo "=== Test 6: Save mode with major changes ==="
 
 # Create many new files with substantial content to exceed 500 line threshold
 for i in {1..20}; do
@@ -504,57 +405,74 @@ done
 git add -A
 git commit -m "Major refactoring" --quiet
 
-run_test "Major changes trigger regeneration" \
-    "$HOME/bin/smart-gsum ." \
+run_test "Save mode with major changes triggers regeneration" \
+    "$HOME/bin/smart-gsum --save ." \
     "Significant changes detected"
 
-# Test 5: Branch handling
+# Test 7: Plan mode
 echo
-echo "=== Test 5: Branch handling ==="
+echo "=== Test 7: Plan mode ==="
+echo -n "Testing: Plan mode generates implementation plan... "
+set +e
+output=$($HOME/bin/smart-gsum --plan "Add user authentication" . 2>&1)
+exit_code=$?
+set -e
 
-# First ensure we have a main branch summary
-git checkout main --quiet
-# The summary should already exist from previous tests
-
-# Now create and switch to feature branch
-git checkout -b feature-branch --quiet
-
-# Make a change on the new branch
-echo "export const VERSION = '2.0.0';" > src/version.js
-git add -A
-git commit -m "Add version file" --quiet
-
-# Should create branch-specific file since we're on a different branch
-run_test "New branch creates branch-specific file" \
-    "$HOME/bin/smart-gsum ." \
-    "No existing summary found"
-
-# Verify branch-specific file exists
-echo -n "Verifying branch-specific summary... "
-# Since this is a fresh branch, it creates the default name first
-if [ -f "DIRECTORY_SUMMARY.md" ]; then
+if [ $exit_code -eq 0 ] && echo "$output" | grep -q "Successfully generated"; then
     echo "${GREEN}✓ PASSED${NC}"
-    echo "  Note: Branch-specific files are created when branches diverge with existing summaries"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
     echo "${RED}✗ FAILED${NC}"
-    echo "  Files found:"
-    ls -la DIRECTORY_SUMMARY*.md 2>/dev/null | sed 's/^/    /' || echo "    No DIRECTORY_SUMMARY files found"
+    echo "  Exit code: $exit_code"
+    echo "  Got output:"
+    echo "$output" | head -10 | sed 's/^/    /'
     TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 TESTS_RUN=$((TESTS_RUN + 1))
 
-# Test 6: Non-git directory
+# Verify plan file was created
+echo -n "Verifying implementation plan file exists... "
+if ls IMPLEMENTATION_PLAN_*.gsum.md 1> /dev/null 2>&1; then
+    echo "${GREEN}✓ PASSED${NC}"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+    echo "  Created: $(ls IMPLEMENTATION_PLAN_*.gsum.md)"
+else
+    echo "${RED}✗ FAILED${NC}"
+    echo "  Directory contents:"
+    ls -la | sed 's/^/    /'
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+fi
+TESTS_RUN=$((TESTS_RUN + 1))
+
+# Test 8: Help flag
 echo
-echo "=== Test 6: Non-git directory ==="
+echo "=== Test 8: Help flag ==="
+run_test "Help flag shows usage" \
+    "$HOME/bin/smart-gsum --help" \
+    "Usage: smart-gsum"
+
+# Test 9: Non-git directory with save mode
+echo
+echo "=== Test 9: Non-git directory with save mode ==="
 NON_GIT_DIR="$TEST_DIR/non-git"
 mkdir -p "$NON_GIT_DIR"
 echo "Some content" > "$NON_GIT_DIR/file.txt"
 cd "$NON_GIT_DIR"
 
-run_test "Non-git directory generates summary" \
-    "$HOME/bin/smart-gsum ." \
-    "No existing summary found"
+run_test "Non-git directory with save mode" \
+    "$HOME/bin/smart-gsum --save ." \
+    "Successfully generated ARCHITECTURE.gsum.md"
+
+# Test 10: Directory argument
+echo
+echo "=== Test 10: Directory argument ==="
+cd "$TEST_PROJECT"
+mkdir -p subdir
+echo "test" > subdir/test.txt
+
+run_test "Directory argument works" \
+    "$HOME/bin/smart-gsum --ephemeral ./subdir" \
+    "Architecture Overview"
 
 # Summary
 echo

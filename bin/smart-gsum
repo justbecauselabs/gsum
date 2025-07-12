@@ -1,24 +1,77 @@
 #!/bin/bash
 
-# Smart directory summarizer that checks git state before regenerating
+# Smart directory summarizer with multiple modes
+# Usage: smart-gsum [options] [directory]
+# Options:
+#   --ephemeral: (Default) Generate a summary and print to stdout
+#   --save:      Generate a persistent ARCHITECTURE.gsum.md, using git-aware logic
+#   --plan "task": Generate an implementation plan for the given task
+#   --help:      Show help text
 
-TARGET_DIR="${1:-.}"
-
+MODE="ephemeral"
+TASK_DESCRIPTION=""
+TARGET_DIR=""
 DIFF_THRESHOLD=500  # Lines of diff before we consider it "non-trivial"
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --ephemeral)
+            MODE="ephemeral"
+            shift
+            ;;
+        --save)
+            MODE="save"
+            shift
+            ;;
+        --plan)
+            MODE="plan"
+            shift
+            if [[ $# -eq 0 || $1 == --* ]]; then
+                echo "Error: --plan requires a task description"
+                exit 1
+            fi
+            TASK_DESCRIPTION="$1"
+            shift
+            ;;
+        --help)
+            echo "Usage: smart-gsum [options] [directory]"
+            echo ""
+            echo "Options:"
+            echo "  --ephemeral    (Default) Generate a summary and print to stdout"
+            echo "  --save         Generate a persistent ARCHITECTURE.gsum.md, using git-aware logic"
+            echo "  --plan \"task\"  Generate an implementation plan for the given task"
+            echo "  --help         Show this help text"
+            echo ""
+            echo "Examples:"
+            echo "  smart-gsum                    # Ephemeral summary of current directory"
+            echo "  smart-gsum --save ./src       # Save persistent summary of ./src"
+            echo "  smart-gsum --plan \"Add user authentication\""
+            exit 0
+            ;;
+        --*)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+        *)
+            if [[ -z "$TARGET_DIR" ]]; then
+                TARGET_DIR="$1"
+            else
+                echo "Error: Multiple directories specified"
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Default to current directory if none specified
+TARGET_DIR="${TARGET_DIR:-.}"
 
 # Function to get current git branch name
 get_branch_name() {
     cd "$TARGET_DIR" 2>/dev/null && git branch --show-current 2>/dev/null
-}
-
-# Function to get summary file name (branch-specific if needed)
-get_summary_file() {
-    local branch=$(get_branch_name)
-    if [[ -n "$branch" ]] && [[ "$branch" != "main" ]] && [[ "$branch" != "master" ]]; then
-        echo "$TARGET_DIR/DIRECTORY_SUMMARY.${branch}.md"
-    else
-        echo "$TARGET_DIR/DIRECTORY_SUMMARY.md"
-    fi
 }
 
 # Function to extract git hash from summary file
@@ -53,94 +106,221 @@ is_diff_trivial() {
         diff_output=0
     fi
     
-    
     [[ $diff_output -lt $DIFF_THRESHOLD ]]
 }
 
-# Main logic
-main() {
-    local summary_file=$(get_summary_file)
+# Function to generate ephemeral summary to stdout
+generate_ephemeral() {
+    # Save current directory
+    local current_dir=$(pwd)
     
-    # EARLY EXIT: If no summary file exists, generate immediately
-    if [[ ! -f "$summary_file" ]]; then
-        echo "No existing summary found. Generating fresh summary..."
-        ~/bin/gsummarize-wrapper "$TARGET_DIR"
+    # Change to target directory
+    cd "$TARGET_DIR" || exit 1
+    
+    # Generate the summary (creates DIRECTORY_SUMMARY.md)
+    ~/bin/gsummarize-wrapper . > /dev/null 2>&1
+    
+    # Check if DIRECTORY_SUMMARY.md was created
+    if [ -f "DIRECTORY_SUMMARY.md" ]; then
+        # Output the content to stdout
+        cat "DIRECTORY_SUMMARY.md"
         
-        # Append git hash to the generated file
-        local current_hash=$(get_current_hash)
-        if [[ -f "$summary_file" ]] && [[ -n "$current_hash" ]]; then
+        # Remove the file since this is ephemeral
+        rm -f "DIRECTORY_SUMMARY.md"
+    else
+        echo "Error: Failed to generate summary" >&2
+        cd "$current_dir"
+        return 1
+    fi
+    
+    # Return to original directory
+    cd "$current_dir"
+}
+
+# Function to save persistent summary with git-aware logic
+save_persistent() {
+    local summary_file="$TARGET_DIR/ARCHITECTURE.gsum.md"
+    local current_hash=$(get_current_hash)
+    
+    # If no summary file exists, generate immediately
+    if [[ ! -f "$summary_file" ]]; then
+        echo "No existing ARCHITECTURE.gsum.md found. Generating fresh summary..."
+        
+        # Generate to temp file first
+        local temp_file=$(mktemp)
+        ~/bin/gsummarize-wrapper "$TARGET_DIR" > "$temp_file" 2>&1
+        
+        # Replace DIRECTORY_SUMMARY.md with ARCHITECTURE.gsum.md in the output
+        sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' "$temp_file" > "$summary_file"
+        
+        # Append git hash if in a git repo
+        if [[ -n "$current_hash" ]]; then
             echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
         fi
+        
+        rm -f "$temp_file"
+        echo "Successfully generated ARCHITECTURE.gsum.md"
         return
     fi
     
     local stored_hash=$(get_stored_hash "$summary_file")
-    local current_hash=$(get_current_hash)
     
     # If not a git repo, just regenerate
     if [[ -z "$current_hash" ]]; then
-        echo "Not a git repository. Generating fresh summary..."
-        ~/bin/gsummarize-wrapper "$TARGET_DIR"
+        echo "Not a git repository. Regenerating ARCHITECTURE.gsum.md..."
+        local temp_file=$(mktemp)
+        ~/bin/gsummarize-wrapper "$TARGET_DIR" > "$temp_file" 2>&1
+        sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' "$temp_file" > "$summary_file"
+        rm -f "$temp_file"
+        echo "Successfully updated ARCHITECTURE.gsum.md"
         return
     fi
     
     # If no stored hash, regenerate
     if [[ -z "$stored_hash" ]]; then
         echo "No git hash in existing summary. Regenerating..."
-        ~/bin/gsummarize-wrapper "$TARGET_DIR"
-        if [[ -f "$summary_file" ]]; then
-            echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
-        fi
+        local temp_file=$(mktemp)
+        ~/bin/gsummarize-wrapper "$TARGET_DIR" > "$temp_file" 2>&1
+        sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' "$temp_file" > "$summary_file"
+        echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
+        rm -f "$temp_file"
+        echo "Successfully updated ARCHITECTURE.gsum.md"
         return
     fi
     
-    # If same hash, just load existing
+    # If same hash, no update needed
     if [[ "$stored_hash" == "$current_hash" ]]; then
-        echo "Summary is up to date (no changes since last summary)."
-        echo "Loading existing summary..."
-        cat "$summary_file"
+        echo "ARCHITECTURE.gsum.md is up to date (no changes since last summary)."
         return
     fi
     
-    # Check if commits are connected
-    if ! are_commits_connected "$stored_hash" "$current_hash"; then
-        echo "Branch has diverged from stored hash. Creating branch-specific summary..."
-        # Force use branch-specific file
-        local branch=$(get_branch_name)
-        if [[ -n "$branch" ]]; then
-            summary_file="DIRECTORY_SUMMARY.${branch}.md"
-        fi
-        ~/bin/gsummarize-wrapper "$TARGET_DIR"
-        if [[ -f "$summary_file" ]]; then
-            echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
-        fi
-        return
-    fi
-    
-    # Check if diff is trivial (only between stored hash and current HEAD)
-    if is_diff_trivial "$stored_hash" "$current_hash"; then
-        echo "Changes are trivial. Loading existing summary with diff..."
-        echo "=== EXISTING SUMMARY ==="
-        cat "$summary_file"
-        echo -e "\n=== CHANGES SINCE LAST SUMMARY ==="
-        echo "From: $stored_hash"
-        echo "To:   $current_hash"
-        echo ""
-        cd "$TARGET_DIR" && git diff "$stored_hash..$current_hash" --stat
-        echo -e "\n--- Detailed changes ---"
-        cd "$TARGET_DIR" && git log --oneline "$stored_hash..$current_hash"
+    # Check if commits are connected and diff is trivial
+    if are_commits_connected "$stored_hash" "$current_hash" && is_diff_trivial "$stored_hash" "$current_hash"; then
+        echo "Changes are trivial (less than $DIFF_THRESHOLD lines changed)."
+        echo "ARCHITECTURE.gsum.md is up to date."
     else
-        echo "Significant changes detected. Regenerating summary..."
-        ~/bin/gsummarize-wrapper "$TARGET_DIR"
+        echo "Significant changes detected. Regenerating ARCHITECTURE.gsum.md..."
+        local temp_file=$(mktemp)
+        ~/bin/gsummarize-wrapper "$TARGET_DIR" > "$temp_file" 2>&1
+        sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' "$temp_file" > "$summary_file"
         
-        # Update git hash in the generated file
-        if [[ -f "$summary_file" ]]; then
-            # Remove old hash if exists
-            sed -i '' '/<!-- git-hash:/d' "$summary_file"
-            # Add new hash
-            echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
-        fi
+        # Remove old hash and add new one
+        sed -i '' '/<!-- git-hash:/d' "$summary_file"
+        echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
+        
+        rm -f "$temp_file"
+        echo "Successfully updated ARCHITECTURE.gsum.md"
     fi
 }
 
-main "$@"
+# Function to generate implementation plan
+generate_plan() {
+    # Generate ephemeral summary first
+    local temp_summary=$(mktemp)
+    generate_ephemeral > "$temp_summary"
+    
+    # Create a safe filename from the task description
+    local safe_name=$(echo "$TASK_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | sed 's/^_//;s/_$//' | cut -c1-50)
+    local plan_file="$TARGET_DIR/IMPLEMENTATION_PLAN_${safe_name}.gsum.md"
+    
+    echo "Generating implementation plan for: $TASK_DESCRIPTION"
+    echo "Output file: $plan_file"
+    
+    # Use gemini to create the implementation plan
+    cd "$TARGET_DIR" || exit 1
+    
+    gemini --yolo << EOF > "$plan_file"
+Based on the following codebase architecture summary, create a detailed technical implementation plan for this task:
+
+TASK: $TASK_DESCRIPTION
+
+CODEBASE ARCHITECTURE:
+$(cat "$temp_summary")
+
+Create a comprehensive IMPLEMENTATION PLAN that includes:
+
+# TASK OVERVIEW
+- Clear understanding of what needs to be built
+- Success criteria and acceptance criteria
+- Assumptions and constraints
+
+# TECHNICAL APPROACH
+- High-level solution design
+- Technology choices and justification
+- Integration points with existing code
+
+# IMPLEMENTATION STEPS
+Detailed step-by-step plan:
+1. [Step description]
+   - Specific files to create/modify
+   - Code patterns to follow
+   - Dependencies to add
+
+2. [Next step...]
+   ...
+
+# CODE STRUCTURE
+- New files/directories to create
+- Modifications to existing files
+- Example code snippets for key components
+
+# DATABASE CHANGES
+- Schema modifications needed
+- Migration scripts
+- Data model updates
+
+# API CHANGES
+- New endpoints to create
+- Modifications to existing endpoints
+- Request/response formats
+
+# FRONTEND CHANGES
+- New components needed
+- State management updates
+- UI/UX considerations
+
+# TESTING PLAN
+- Unit tests to write
+- Integration tests needed
+- Test scenarios to cover
+
+# DEPLOYMENT CONSIDERATIONS
+- Configuration changes
+- Environment variables
+- Build/deployment updates
+
+# POTENTIAL CHALLENGES
+- Technical risks
+- Performance concerns
+- Security considerations
+
+# ESTIMATED EFFORT
+- Development time estimate
+- Testing time estimate
+- Total implementation time
+
+Make this plan actionable and specific to this codebase's patterns and conventions.
+EOF
+    
+    # Clean up
+    rm -f "$temp_summary"
+    
+    echo "Successfully generated $plan_file"
+}
+
+# Main execution
+case $MODE in
+    ephemeral)
+        generate_ephemeral
+        ;;
+    save)
+        save_persistent
+        ;;
+    plan)
+        if [[ -z "$TASK_DESCRIPTION" ]]; then
+            echo "Error: No task description provided for plan mode"
+            exit 1
+        fi
+        generate_plan
+        ;;
+esac

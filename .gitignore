@@ -5,6 +5,5 @@
 test/
 tmp/
 
-# Generated summaries (these should be project-specific)
-DIRECTORY_SUMMARY*.md
-ARCHITECTURE.md
+# Example entries for gsum outputs
+# Uncomment based on your workflow needs (see README for guidance)

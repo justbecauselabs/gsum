@@ -1,14 +1,29 @@
 # gsum - Smart AI Project Summarizer 🤖
 
-**Stop wasting Claude's context window!** Let Gemini analyze your codebase and create detailed technical documentation that Claude can reference instantly.
+**Three powerful commands to supercharge your Claude workflow.** Let Gemini analyze your codebase and create AI-ready documentation instantly.
 
-## 🎯 What is gsum?
+## 🎯 Three Core Use Cases
 
-gsum creates **smart, git-aware project summaries** that:
-- 📚 Generate 1000+ line technical specifications of your codebase
-- 🔄 Only regenerate when you have significant changes
-- 💾 Cache summaries to save API calls and time
-- 🌿 Track different branches separately
+### 1. `/gsum` - Ephemeral Context Loading
+**WHY:** When you need Claude to understand your project RIGHT NOW for the current conversation.
+- Always generates a fresh summary
+- Outputs directly to the conversation
+- Perfect for debugging sessions, feature development, or code reviews
+- No files created or modified
+
+### 2. `/gsum-save` - Persistent Architecture Documentation  
+**WHY:** Maintain a living technical document that evolves with your codebase.
+- Creates/updates `ARCHITECTURE.gsum.md` in your project
+- Uses smart Git tracking - only regenerates after significant changes (500+ lines)
+- Perfect for onboarding, documentation, and team knowledge sharing
+- Version-controlled alongside your code
+
+### 3. `/gsum-plan` - Automated Implementation Planning
+**WHY:** Transform high-level ideas into detailed technical roadmaps.
+- Takes a task description like "Add user authentication"
+- Analyzes your codebase structure and patterns
+- Generates a detailed `IMPLEMENTATION_PLAN_*.gsum.md` file
+- Perfect for planning features, refactoring, or complex changes
 
 ## 🚀 Quick Start
 
@@ -22,146 +37,166 @@ make install
 
 ### 2. Use in Claude
 
-Just type in any Claude conversation:
-
-```
+```bash
+# Quick context for current task
 /gsum
+
+# Create persistent documentation
+/gsum-save
+
+# Plan a new feature
+/gsum-plan "Add real-time notifications"
 ```
 
 That's it! 🎉
 
+## 📋 .gitignore Recommendations
+
+Based on your workflow, add these to your project's `.gitignore`:
+
+```bash
+# For /gsum users (ephemeral context)
+# Nothing to ignore - outputs to stdout only
+
+# For /gsum-save users (persistent documentation)
+# DO NOT ignore - this should be version controlled!
+# ARCHITECTURE.gsum.md is your living technical documentation
+
+# For /gsum-plan users (implementation planning)
+# These are task-specific and typically shouldn't be committed
+IMPLEMENTATION_PLAN_*.gsum.md
+```
+
+**WHY these recommendations:**
+- `ARCHITECTURE.gsum.md` is valuable documentation that should evolve with your code
+- Implementation plans are usually temporary planning documents
+- Ephemeral summaries never touch the filesystem
+
 ## 📸 What You'll See
 
-### First Run
+### Ephemeral Context (`/gsum`)
 ```
 /gsum
 
-⏺ No existing summary found. Generating fresh summary...
-⏺ Analyzing project structure...
-⏺ Created DIRECTORY_SUMMARY.md (73KB, 1335 lines)
+[Instant analysis of your project appears in Claude]
+# PROJECT OVERVIEW
+Your Next.js application with authentication...
+
+# ARCHITECTURE OVERVIEW
+The application follows a modular architecture...
+[1000+ lines of context]
 ```
 
-### No Changes
+### Persistent Documentation (`/gsum-save`)
 ```
-/gsum
+/gsum-save
 
-⏺ Summary is up to date (no changes since last summary).
-⏺ Loading existing summary...
-[Shows your cached 1000+ line technical spec]
-```
+⏺ No existing ARCHITECTURE.gsum.md found. Generating fresh summary...
+⏺ Successfully generated ARCHITECTURE.gsum.md
 
-### Minor Changes
-```
-/gsum
-
-⏺ Changes are trivial. Loading existing summary with diff...
-=== EXISTING SUMMARY ===
-[Shows cached summary]
-=== CHANGES SINCE LAST SUMMARY ===
-From: abc123
-To:   def456
- src/components/Button.tsx | 5 +++++
- 1 file changed, 5 insertions(+)
+# Next run with no changes:
+/gsum-save
+⏺ ARCHITECTURE.gsum.md is up to date (no changes since last summary).
 ```
 
-## 🤔 Why Use This?
+### Implementation Planning (`/gsum-plan`)
+```
+/gsum-plan "Add user authentication"
+
+⏺ Generating implementation plan for: Add user authentication
+⏺ Output file: IMPLEMENTATION_PLAN_add_user_authentication.gsum.md
+⏺ Successfully generated implementation plan
+```
+
+## 🤔 Why Three Commands?
 
 ### The Problem
-Every time you ask Claude about your project, you waste context explaining:
-- What files exist
-- How they connect
-- What patterns you use
-- Your project structure
+Different development scenarios need different approaches:
+- **Quick questions** don't need persistent files
+- **Team documentation** should be version-controlled
+- **Feature planning** needs dedicated analysis
 
 ### The Solution
-gsum pre-analyzes everything with Gemini and creates a comprehensive technical document that includes:
+Three specialized commands, each optimized for its use case:
 
-- **Project Overview** - Purpose, features, current status
-- **Setup Instructions** - How to install and run
-- **Architecture** - How everything fits together
-- **Directory Structure** - What goes where and why
-- **Key Components** - Deep dive into each module
-- **Database Schema** - Tables, relationships, queries
-- **API Design** - Endpoints, auth, patterns
-- **Code Examples** - Real snippets from your project
-- **Development Workflow** - How to add features
-- **And much more...**
+| Command | Creates Files? | Git-Aware? | Best For |
+|---------|---------------|------------|----------|
+| `/gsum` | No | No | Quick context during coding |
+| `/gsum-save` | Yes (tracked) | Yes | Living documentation |
+| `/gsum-plan` | Yes (temp) | No | Feature planning |
 
 ## 💡 Real Use Cases
 
-### Case 1: "Help me add a new feature"
+### Case 1: Debugging Session
 ```
 /gsum
-Claude, I need to add user notifications to this app
+Claude, I'm getting a TypeError in the auth flow
 ```
-Claude now knows your entire architecture and can give specific guidance!
+Claude instantly understands your entire auth architecture!
 
-### Case 2: "Fix this bug"
+### Case 2: Onboarding New Developer
 ```
-/gsum
-Getting TypeError in production, help me debug
+/gsum-save
+git add ARCHITECTURE.gsum.md
+git commit -m "Add architecture documentation"
 ```
-Claude understands your error handling patterns and can pinpoint issues!
+New team members can read comprehensive docs in the repo!
 
-### Case 3: "Code review"
+### Case 3: Planning a Feature
 ```
-/gsum
-Review my recent changes and suggest improvements
+/gsum-plan "Add webhook support for payments"
 ```
-Claude sees what changed and knows your coding standards!
+Get a detailed roadmap with specific files to modify!
 
 ## 🛠️ Advanced Usage
 
 ### Analyze Specific Directory
-```
-/gsum /path/to/project
+```bash
+/gsum ./src/components
+/gsum-save ./backend
+/gsum-plan "Refactor database layer" ./src/db
 ```
 
 ### Update to Latest Version
-
-If you cloned the repo:
 ```bash
 cd gsum
-make install  # This updates existing installations too
-```
-
-Or pull latest changes from GitHub:
-```bash
-cd gsum
-make update  # Fetches from GitHub and updates
+make update  # Fetches from GitHub and reinstalls
 ```
 
 ### Customize Behavior
 Edit `~/bin/smart-gsum` to adjust:
-- `DIFF_THRESHOLD=500` - How many lines before regenerating
+- `DIFF_THRESHOLD=500` - Lines changed before regenerating (for `/gsum-save`)
 
 ## 📋 Requirements
 
 - **Claude Desktop** - With `/` commands enabled
 - **Gemini CLI** - With MCP tools
-- **Git** - For change tracking
+- **Git** - For change tracking (optional for `/gsum`)
 - **macOS/Linux** - Bash/Zsh shell
 
 ## ❓ FAQ
 
-**Q: Does this work with any project?**
-A: Yes! Works with any programming language or framework.
+**Q: When should I use which command?**
+A: 
+- `/gsum` - Daily coding, debugging, quick questions
+- `/gsum-save` - Documentation, team knowledge, architecture decisions
+- `/gsum-plan` - Before starting new features or major changes
+
+**Q: Should I commit ARCHITECTURE.gsum.md?**
+A: Yes! It's valuable documentation that helps your team understand the codebase.
+
+**Q: Can I use multiple commands?**
+A: Absolutely! Many users run `/gsum-save` weekly and use `/gsum` daily.
 
 **Q: How much does it cost?**
-A: Uses your existing Gemini API quota. Smart caching minimizes API calls.
-
-**Q: Can I customize the summary format?**
-A: Yes! Edit `~/bin/gsummarize-wrapper` to modify the template.
-
-**Q: Where are summaries stored?**
-A: In your project as `DIRECTORY_SUMMARY.md` (git-ignored by default).
+A: Uses your existing Gemini API quota. Smart caching in `/gsum-save` minimizes API calls.
 
 **Q: What about private code?**
-A: Summaries stay local. Only sent to Gemini when generating.
+A: All analysis happens locally. Only sent to Gemini when generating summaries.
 
 ## 🐛 Troubleshooting
 
-### "command not found: gsum"
+### "command not found"
 ```bash
 source ~/.zshrc  # or ~/.bashrc
 ```

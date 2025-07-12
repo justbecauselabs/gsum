@@ -1,6 +1,6 @@
 ---
-description: Smart directory summary - only regenerates if significant changes detected
+description: Generates a fresh, detailed summary of the current project for ephemeral context.
 allowed-tools: [bash]
 ---
 
-!smart-gsum $ARGUMENTS
+!smart-gsum --ephemeral $ARGUMENTS

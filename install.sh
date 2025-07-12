@@ -119,12 +119,28 @@ else
     exit 1
 fi
 
-# Copy Claude command
+# Copy Claude commands
 if [ -f "$SCRIPT_DIR/claude-commands/gsum.md" ]; then
     cp "$SCRIPT_DIR/claude-commands/gsum.md" "$HOME/.claude/commands/"
     echo "${GREEN}✓${NC} Installed Claude /gsum command"
 else
     echo "${RED}✗ gsum.md not found in $SCRIPT_DIR/claude-commands/${NC}"
+    exit 1
+fi
+
+if [ -f "$SCRIPT_DIR/claude-commands/gsum-save.md" ]; then
+    cp "$SCRIPT_DIR/claude-commands/gsum-save.md" "$HOME/.claude/commands/"
+    echo "${GREEN}✓${NC} Installed Claude /gsum-save command"
+else
+    echo "${RED}✗ gsum-save.md not found in $SCRIPT_DIR/claude-commands/${NC}"
+    exit 1
+fi
+
+if [ -f "$SCRIPT_DIR/claude-commands/gsum-plan.md" ]; then
+    cp "$SCRIPT_DIR/claude-commands/gsum-plan.md" "$HOME/.claude/commands/"
+    echo "${GREEN}✓${NC} Installed Claude /gsum-plan command"
+else
+    echo "${RED}✗ gsum-plan.md not found in $SCRIPT_DIR/claude-commands/${NC}"
     exit 1
 fi
 
@@ -170,18 +186,20 @@ echo
 echo "Next steps:"
 if [ "$IS_UPDATE" = false ]; then
     echo "1. Reload your shell: ${YELLOW}source $SHELL_RC${NC}"
-    echo "2. In Claude, type: ${YELLOW}/gsum${NC}"
+    echo "2. In Claude, try the new commands!"
 else
-    echo "- In Claude, type: ${YELLOW}/gsum${NC}"
+    echo "- Your Claude commands have been updated!"
 fi
 echo
-echo "Usage:"
-echo "  /gsum              - Analyze current directory"
-echo "  /gsum /path/to/dir - Analyze specific directory"
+echo "Available Claude Commands:"
+echo "  ${YELLOW}/gsum${NC}              - Generate ephemeral project summary (always fresh)"
+echo "  ${YELLOW}/gsum-save${NC}         - Create/update persistent ARCHITECTURE.gsum.md"
+echo "  ${YELLOW}/gsum-plan${NC} \"task\"  - Generate implementation plan for a task"
 echo
-if [ "$IS_UPDATE" = false ]; then
-    echo "The first run will generate a detailed architecture document."
-    echo "Subsequent runs will be smart about regeneration."
-fi
+echo "Examples:"
+echo "  /gsum                    # Summarize current directory"
+echo "  /gsum ./src              # Summarize specific directory"
+echo "  /gsum-save               # Create ARCHITECTURE.gsum.md in current dir"
+echo "  /gsum-plan \"Add user authentication feature\""
 echo
 echo "Happy coding! 🚀"
