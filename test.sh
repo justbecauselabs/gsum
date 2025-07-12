@@ -78,6 +78,18 @@ if [ ! -x "$HOME/bin/gsummarize-wrapper" ]; then
     exit 1
 fi
 
+# Check MCP server installation
+if [ ! -x "$HOME/bin/gsum-mcp-server/index.js" ]; then
+    echo "${RED}✗ gsum MCP server not found. Run 'make install' first.${NC}"
+    exit 1
+fi
+
+# Check MCP server dependencies
+if [ ! -d "$HOME/bin/gsum-mcp-server/node_modules" ]; then
+    echo "${RED}✗ gsum MCP server dependencies not installed. Run 'make install' first.${NC}"
+    exit 1
+fi
+
 echo "${GREEN}✓${NC} All prerequisites found"
 echo
 
@@ -473,6 +485,67 @@ echo "test" > subdir/test.txt
 run_test "Directory argument works" \
     "$HOME/bin/smart-gsum --ephemeral ./subdir" \
     "Architecture Overview"
+
+# Test 11: MCP server version check
+echo
+echo "=== Test 11: MCP server functionality ==="
+echo -n "Testing: MCP server version check... "
+set +e
+output=$(node "$HOME/bin/gsum-mcp-server/index.js" --version 2>&1)
+exit_code=$?
+set -e
+
+if [ $exit_code -eq 0 ] && echo "$output" | grep -q "1.0.0"; then
+    echo "${GREEN}✓ PASSED${NC}"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+else
+    echo "${RED}✗ FAILED${NC}"
+    echo "  Exit code: $exit_code"
+    echo "  Got output: $output"
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+fi
+TESTS_RUN=$((TESTS_RUN + 1))
+
+# Test 12: Gemini config check
+echo
+echo "=== Test 12: Gemini MCP configuration ==="
+echo -n "Testing: Gemini config has gsum MCP server... "
+GEMINI_CONFIG="$HOME/.config/gemini/config.json"
+
+if [ -f "$GEMINI_CONFIG" ] && grep -q "gsum-mcp-server" "$GEMINI_CONFIG"; then
+    echo "${GREEN}✓ PASSED${NC}"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+else
+    echo "${RED}✗ FAILED${NC}"
+    echo "  Gemini config not found or missing gsum MCP server"
+    if [ -f "$GEMINI_CONFIG" ]; then
+        echo "  Config file exists at: $GEMINI_CONFIG"
+    else
+        echo "  Config file not found at: $GEMINI_CONFIG"
+    fi
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+fi
+TESTS_RUN=$((TESTS_RUN + 1))
+
+# Test 13: MCP server can be started
+echo
+echo "=== Test 13: MCP server startup test ==="
+echo -n "Testing: MCP server can start... "
+set +e
+# Start server and immediately kill it
+timeout 2s node "$HOME/bin/gsum-mcp-server/index.js" 2>&1 | grep -q "gsum MCP server running"
+grep_exit_code=$?
+set -e
+
+if [ $grep_exit_code -eq 0 ]; then
+    echo "${GREEN}✓ PASSED${NC}"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+else
+    echo "${RED}✗ FAILED${NC}"
+    echo "  MCP server failed to start properly"
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+fi
+TESTS_RUN=$((TESTS_RUN + 1))
 
 # Summary
 echo

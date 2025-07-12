@@ -230,6 +230,15 @@ generate_plan() {
     cd "$TARGET_DIR" || exit 1
     
     gemini --yolo << EOF > "$plan_file"
+You are a senior software engineer, architect, and tech lead. 
+- You are an expert in the field of software engineering and architecture. 
+- You are also a great communicator and writer. You are able to write in a way that is easy to understand and follow.
+- You are also able to write in a way that is concise and to the point. 
+- You are also able to write in a way that is engaging and interesting to read. 
+- You are also able to write in a way that is accurate and correct. 
+- You are also able to write in a way that is helpful and useful to the reader. 
+- You are also able to write in a way that is easy to understand and follow.
+
 Based on the following codebase architecture summary, create a detailed technical implementation plan for this task:
 
 TASK: $TASK_DESCRIPTION

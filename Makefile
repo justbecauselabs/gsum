@@ -33,10 +33,15 @@ update:
 	@cp -f /tmp/gsum-update/gsum/bin/smart-gsum ~/bin/smart-gsum
 	@cp -f /tmp/gsum-update/gsum/bin/gsummarize-wrapper ~/bin/gsummarize-wrapper
 	@cp -f /tmp/gsum-update/gsum/claude-commands/gsum.md ~/.claude/commands/gsum.md
+	@cp -rf /tmp/gsum-update/gsum/mcp-server ~/bin/gsum-mcp-server
 	
 	# Make executable
 	@chmod +x ~/bin/smart-gsum
 	@chmod +x ~/bin/gsummarize-wrapper
+	@chmod +x ~/bin/gsum-mcp-server/index.js
+	
+	# Install MCP server dependencies
+	@cd ~/bin/gsum-mcp-server && npm install --silent
 	
 	# Clean up
 	@rm -rf /tmp/gsum-update

@@ -35,6 +35,13 @@ cd gsum
 make install
 ```
 
+The installer will:
+- ✅ Check for all required dependencies
+- ✅ Install the gsum MCP server for Gemini
+- ✅ Configure Gemini to use the MCP server
+- ✅ Set up Claude commands
+- ✅ Add necessary shell aliases
+
 ### 2. Use in Claude
 
 ```bash
@@ -125,6 +132,16 @@ Three specialized commands, each optimized for its use case:
 | `/gsum-save` | Yes (tracked) | Yes | Living documentation |
 | `/gsum-plan` | Yes (temp) | No | Feature planning |
 
+## 🔧 How It Works
+
+gsum uses a powerful MCP (Model Context Protocol) server that:
+1. **Analyzes your codebase** - Respects .gitignore, detects tech stack
+2. **Generates comprehensive documentation** - Tailored for AI consumption
+3. **Integrates with Gemini** - Uses the `summarize_directory` tool
+4. **Delivers to Claude** - Via the three specialized commands
+
+The MCP server is automatically installed and configured during setup.
+
 ## 💡 Real Use Cases
 
 ### Case 1: Debugging Session
@@ -170,7 +187,9 @@ Edit `~/bin/smart-gsum` to adjust:
 ## 📋 Requirements
 
 - **Claude Desktop** - With `/` commands enabled
-- **Gemini CLI** - With MCP tools
+- **Gemini CLI** - For AI-powered analysis
+- **Node.js v18+** - Required for MCP server
+- **npm** - For installing dependencies
 - **Git** - For change tracking (optional for `/gsum`)
 - **macOS/Linux** - Bash/Zsh shell
 
@@ -203,6 +222,12 @@ source ~/.zshrc  # or ~/.bashrc
 
 ### "Gemini not found"
 Install Gemini CLI first: [Gemini CLI Guide](https://github.com/google/gemini-cli)
+
+### "MCP server not working"
+1. Ensure Node.js v18+ is installed: `node --version`
+2. Check MCP server installation: `node ~/bin/gsum-mcp-server/index.js --version`
+3. Restart Gemini CLI to load the MCP server
+4. Check Gemini config: `cat ~/.config/gemini/config.json`
 
 ### "Claude command not working"
 Make sure you have Claude Desktop with slash commands enabled.
