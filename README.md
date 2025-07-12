@@ -1,178 +1,183 @@
-# AI Context Summarizer 🤖📚
+# gsum - Smart AI Project Summarizer 🤖
 
-Save Claude's context window by using Gemini to generate detailed architecture documentation for your projects. This tool creates comprehensive technical specifications that serve as condensed context for AI agents.
+**Stop wasting Claude's context window!** Let Gemini analyze your codebase and create detailed technical documentation that Claude can reference instantly.
 
-## 🎯 What it does
+## 🎯 What is gsum?
 
-- **Smart Summaries**: Generates detailed architecture docs only when needed
-- **Git-Aware**: Tracks changes and shows diffs for minor updates
-- **Branch Support**: Creates branch-specific summaries when switching branches
-- **Context Optimization**: Offloads heavy analysis to Gemini, preserving Claude's context
-- **One Command**: Simply type `/gsum` in Claude to analyze any directory
+gsum creates **smart, git-aware project summaries** that:
+- 📚 Generate 1000+ line technical specifications of your codebase
+- 🔄 Only regenerate when you have significant changes
+- 💾 Cache summaries to save API calls and time
+- 🌿 Track different branches separately
 
-## 📋 Prerequisites
+## 🚀 Quick Start
 
-1. **Claude Desktop** with Claude Code CLI installed
-2. **Gemini CLI** with MCP directory-summarizer tool
-3. **Git** (for change tracking)
-4. **macOS/Linux** with bash/zsh
-
-## 🚀 Quick Install
+### 1. Install (30 seconds)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/jhurray/ai-context-summarizer/main/install.sh | bash
+git clone https://github.com/jhurray/gsum.git
+cd gsum
+make install
 ```
 
-Or clone and install manually:
+### 2. Use in Claude
 
-```bash
-git clone https://github.com/jhurray/ai-context-summarizer.git
-cd ai-context-summarizer
-./install.sh
-```
-
-## 🛠️ Manual Setup
-
-### 1. Install Gemini CLI with MCP support
-
-Follow the [Gemini CLI installation guide](https://github.com/google/gemini-cli) and ensure you have the `summarize_directory` MCP tool available.
-
-### 2. Add the shell alias
-
-Add to your `~/.zshrc` or `~/.bashrc`:
-
-```bash
-alias gyolo="gemini --yolo"
-```
-
-### 3. Copy the scripts
-
-```bash
-# Copy the smart summarizer script
-cp bin/smart-gsum ~/bin/
-chmod +x ~/bin/smart-gsum
-
-# Copy the Gemini wrapper
-cp bin/gsummarize-wrapper ~/bin/
-chmod +x ~/bin/gsummarize-wrapper
-
-# Create Claude command directory if it doesn't exist
-mkdir -p ~/.claude/commands
-
-# Copy the Claude slash command
-cp claude-commands/gsum.md ~/.claude/commands/
-```
-
-### 4. Reload your shell
-
-```bash
-source ~/.zshrc  # or ~/.bashrc
-```
-
-## 📖 Usage
-
-### In Claude
-
-Simply type `/gsum` in any Claude conversation to analyze the current directory:
+Just type in any Claude conversation:
 
 ```
 /gsum
 ```
 
-Or analyze a specific directory:
+That's it! 🎉
 
+## 📸 What You'll See
+
+### First Run
+```
+/gsum
+
+⏺ No existing summary found. Generating fresh summary...
+⏺ Analyzing project structure...
+⏺ Created DIRECTORY_SUMMARY.md (73KB, 1335 lines)
+```
+
+### No Changes
+```
+/gsum
+
+⏺ Summary is up to date (no changes since last summary).
+⏺ Loading existing summary...
+[Shows your cached 1000+ line technical spec]
+```
+
+### Minor Changes
+```
+/gsum
+
+⏺ Changes are trivial. Loading existing summary with diff...
+=== EXISTING SUMMARY ===
+[Shows cached summary]
+=== CHANGES SINCE LAST SUMMARY ===
+From: abc123
+To:   def456
+ src/components/Button.tsx | 5 +++++
+ 1 file changed, 5 insertions(+)
+```
+
+## 🤔 Why Use This?
+
+### The Problem
+Every time you ask Claude about your project, you waste context explaining:
+- What files exist
+- How they connect
+- What patterns you use
+- Your project structure
+
+### The Solution
+gsum pre-analyzes everything with Gemini and creates a comprehensive technical document that includes:
+
+- **Project Overview** - Purpose, features, current status
+- **Setup Instructions** - How to install and run
+- **Architecture** - How everything fits together
+- **Directory Structure** - What goes where and why
+- **Key Components** - Deep dive into each module
+- **Database Schema** - Tables, relationships, queries
+- **API Design** - Endpoints, auth, patterns
+- **Code Examples** - Real snippets from your project
+- **Development Workflow** - How to add features
+- **And much more...**
+
+## 💡 Real Use Cases
+
+### Case 1: "Help me add a new feature"
+```
+/gsum
+Claude, I need to add user notifications to this app
+```
+Claude now knows your entire architecture and can give specific guidance!
+
+### Case 2: "Fix this bug"
+```
+/gsum
+Getting TypeError in production, help me debug
+```
+Claude understands your error handling patterns and can pinpoint issues!
+
+### Case 3: "Code review"
+```
+/gsum
+Review my recent changes and suggest improvements
+```
+Claude sees what changed and knows your coding standards!
+
+## 🛠️ Advanced Usage
+
+### Analyze Specific Directory
 ```
 /gsum /path/to/project
 ```
 
-### What happens:
+### Update to Latest Version
+```
+cd gsum
+make update
+```
 
-1. **First run**: Generates a comprehensive `DIRECTORY_SUMMARY.md` with ~1000+ lines of architecture documentation
-2. **No changes**: Shows existing summary instantly
-3. **Minor changes**: Shows existing summary + git diff
-4. **Major changes**: Regenerates the full summary
-5. **Branch switch**: Creates branch-specific summary if commits diverged
+### Customize Behavior
+Edit `~/bin/smart-gsum` to adjust:
+- `DIFF_THRESHOLD=500` - How many lines before regenerating
 
-### Example Output
+## 📋 Requirements
 
-The generated `DIRECTORY_SUMMARY.md` includes:
+- **Claude Desktop** - With `/` commands enabled
+- **Gemini CLI** - With MCP tools
+- **Git** - For change tracking
+- **macOS/Linux** - Bash/Zsh shell
 
-- Project overview and purpose
-- Setup instructions from README
-- Complete architecture overview
-- Directory structure with explanations
-- Key modules and their responsibilities
-- Database schemas and relationships
-- API design and endpoints
-- Frontend component hierarchy
-- Business logic patterns
-- Testing strategies
-- Deployment configurations
-- Security considerations
-- Performance optimizations
-- Code conventions and patterns
-- Step-by-step guides for adding features
+## ❓ FAQ
 
-## 🔧 Configuration
+**Q: Does this work with any project?**
+A: Yes! Works with any programming language or framework.
 
-### Adjust diff threshold
+**Q: How much does it cost?**
+A: Uses your existing Gemini API quota. Smart caching minimizes API calls.
 
-Edit `~/bin/smart-gsum` and change:
+**Q: Can I customize the summary format?**
+A: Yes! Edit `~/bin/gsummarize-wrapper` to modify the template.
 
+**Q: Where are summaries stored?**
+A: In your project as `DIRECTORY_SUMMARY.md` (git-ignored by default).
+
+**Q: What about private code?**
+A: Summaries stay local. Only sent to Gemini when generating.
+
+## 🐛 Troubleshooting
+
+### "command not found: gsum"
 ```bash
-DIFF_THRESHOLD=500  # Lines of diff before regenerating
+source ~/.zshrc  # or ~/.bashrc
 ```
 
-### Customize the summary format
+### "Gemini not found"
+Install Gemini CLI first: [Gemini CLI Guide](https://github.com/google/gemini-cli)
 
-Edit `~/bin/gsummarize-wrapper` to modify the architecture template.
-
-## 🏗️ How it Works
-
-1. **Claude Command** (`/gsum`): Triggers the smart summarizer
-2. **Smart Summarizer** (`smart-gsum`): 
-   - Checks for existing summaries
-   - Compares git hashes
-   - Decides whether to regenerate or show cached version
-3. **Gemini Wrapper** (`gsummarize-wrapper`):
-   - Sends detailed instructions to Gemini
-   - Uses MCP tool to analyze directory
-   - Creates DIRECTORY_SUMMARY.md
-4. **Git Integration**:
-   - Stores commit hash in summary
-   - Tracks changes between summaries
-   - Handles branch switches gracefully
-
-## 🎨 Architecture
-
-```
-ai-context-summarizer/
-├── bin/
-│   ├── smart-gsum              # Main logic for smart summaries
-│   └── gsummarize-wrapper      # Gemini MCP wrapper
-├── claude-commands/
-│   └── gsum.md                 # Claude slash command definition
-├── install.sh                  # One-command installer
-└── README.md                   # This file
-```
+### "Claude command not working"
+Make sure you have Claude Desktop with slash commands enabled.
 
 ## 🤝 Contributing
 
-Contributions welcome! Please:
+Found a bug? Have an idea? PRs welcome!
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+```bash
+gh repo fork jhurray/gsum
+# make your changes
+gh pr create
+```
 
 ## 📄 License
 
-MIT License - see LICENSE file
-
-## 🙏 Credits
-
-Created by [@jhurray](https://github.com/jhurray) to optimize AI agent context usage.
+MIT - Use it however you want!
 
 ---
 
-**Note**: This tool respects `.gitignore` and skips `node_modules`, build outputs, and other generated files to focus on actual source code and architecture.
+Built to save time and context. If it helps you, ⭐ the repo!
