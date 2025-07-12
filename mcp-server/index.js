@@ -6,6 +6,9 @@ import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprot
 import fs from 'fs/promises';
 import path from 'path';
 import { execSync } from 'child_process';
+import { createReadStream } from 'fs';
+import { pipeline } from 'stream/promises';
+import { Transform } from 'stream';
 
 const IGNORED_PATTERNS = [
   'node_modules',
@@ -24,8 +27,26 @@ const IGNORED_PATTERNS = [
   '*.lock',
   'package-lock.json',
   'yarn.lock',
-  'pnpm-lock.yaml'
+  'pnpm-lock.yaml',
+  // Additional patterns for smart traversal
+  'vendor',
+  'bower_components',
+  'jspm_packages',
+  '.nuxt',
+  '.output',
+  '.vercel',
+  '.netlify',
+  '__pycache__',
+  '.pytest_cache',
+  '.mypy_cache',
+  '.tox',
+  'venv',
+  'env',
+  '.venv'
 ];
+
+// Cache for file analysis results
+const fileCache = new Map();
 
 class GsumMcpServer {
   constructor() {
@@ -92,6 +113,9 @@ class GsumMcpServer {
     const maxDepth = args.maxDepth || 10;
 
     try {
+      // Clear cache for new analysis
+      fileCache.clear();
+      
       // Collect project information
       const projectInfo = await this.analyzeProject(targetPath, maxDepth);
       
@@ -111,6 +135,7 @@ class GsumMcpServer {
         ]
       };
     } catch (error) {
+      console.error('Error during summarization:', error);
       return {
         content: [
           {
@@ -133,11 +158,16 @@ class GsumMcpServer {
       packageInfo: await this.getPackageInfo(projectPath),
       readmeContent: await this.getReadmeContent(projectPath),
       techStack: new Set(),
-      keyPatterns: []
+      keyPatterns: [],
+      errors: []
     };
 
-    // Analyze all files
-    await this.analyzeFiles(projectPath, info, 0, maxDepth);
+    // Analyze all files with improved error handling
+    try {
+      await this.analyzeFiles(projectPath, info, 0, maxDepth);
+    } catch (error) {
+      info.errors.push(`File analysis error: ${error.message}`);
+    }
     
     // Detect technology stack
     info.techStack = Array.from(info.techStack);
@@ -153,21 +183,33 @@ class GsumMcpServer {
     try {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
       
-      for (const entry of entries) {
-        if (this.shouldIgnore(entry.name)) continue;
-        
-        if (entry.isDirectory()) {
-          structure[entry.name] = await this.getDirectoryStructure(
-            path.join(dirPath, entry.name),
-            currentDepth + 1,
-            maxDepth
-          );
-        } else {
-          structure[entry.name] = 'file';
-        }
-      }
+      // Process entries in parallel for better performance
+      await Promise.all(
+        entries.map(async (entry) => {
+          if (this.shouldIgnore(entry.name)) return;
+          
+          if (entry.isDirectory()) {
+            // Smart traversal: skip known deep directories
+            if (this.isDeepDirectory(entry.name) && currentDepth > 2) {
+              structure[entry.name] = { _skipped: true };
+              return;
+            }
+            
+            structure[entry.name] = await this.getDirectoryStructure(
+              path.join(dirPath, entry.name),
+              currentDepth + 1,
+              maxDepth
+            );
+          } else {
+            structure[entry.name] = 'file';
+          }
+        })
+      );
     } catch (error) {
-      // Ignore permission errors
+      // Log permission errors but continue
+      if (error.code !== 'EACCES' && error.code !== 'EPERM') {
+        console.error(`Error reading directory ${dirPath}:`, error.message);
+      }
     }
     
     return structure;
@@ -179,29 +221,63 @@ class GsumMcpServer {
     try {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
       
+      // Group files and directories
+      const files = [];
+      const directories = [];
+      
       for (const entry of entries) {
         if (this.shouldIgnore(entry.name)) continue;
         
         const fullPath = path.join(dirPath, entry.name);
         
         if (entry.isDirectory()) {
-          await this.analyzeFiles(fullPath, info, currentDepth + 1, maxDepth);
+          // Skip deep directories intelligently
+          if (!this.isDeepDirectory(entry.name) || currentDepth <= 2) {
+            directories.push(fullPath);
+          }
         } else {
-          const fileInfo = await this.analyzeFile(fullPath, info.path);
+          files.push(fullPath);
+        }
+      }
+      
+      // Process files in parallel batches
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < files.length; i += BATCH_SIZE) {
+        const batch = files.slice(i, i + BATCH_SIZE);
+        const fileInfos = await Promise.all(
+          batch.map(filePath => this.analyzeFile(filePath, info.path))
+        );
+        
+        for (const fileInfo of fileInfos) {
           if (fileInfo) {
             info.files.push(fileInfo);
-            
-            // Detect technology from file extensions and content
             this.detectTechnology(fileInfo, info.techStack);
           }
         }
       }
+      
+      // Process directories recursively
+      for (const dir of directories) {
+        await this.analyzeFiles(dir, info, currentDepth + 1, maxDepth);
+      }
     } catch (error) {
-      // Ignore permission errors
+      if (error.code !== 'EACCES' && error.code !== 'EPERM') {
+        info.errors.push(`Error analyzing ${dirPath}: ${error.message}`);
+      }
     }
   }
 
   async analyzeFile(filePath, projectPath) {
+    // Check cache first
+    const cacheKey = filePath;
+    if (fileCache.has(cacheKey)) {
+      const cached = fileCache.get(cacheKey);
+      const stats = await fs.stat(filePath).catch(() => null);
+      if (stats && cached.mtime === stats.mtimeMs) {
+        return cached.data;
+      }
+    }
+    
     const ext = path.extname(filePath).toLowerCase();
     const relativePath = path.relative(projectPath, filePath);
     
@@ -212,21 +288,79 @@ class GsumMcpServer {
       const stats = await fs.stat(filePath);
       if (stats.size > 1024 * 1024) return null; // Skip files > 1MB
       
-      const content = await fs.readFile(filePath, 'utf8');
+      // Stream read for efficiency - only read first 1KB for analysis
+      const content = await this.readFileStart(filePath, 1024);
       
-      return {
+      const fileInfo = {
         path: relativePath,
         ext: ext,
         size: stats.size,
-        content: content.substring(0, 1000), // First 1000 chars for analysis
+        content: content,
         imports: this.extractImports(content, ext),
         exports: this.extractExports(content, ext),
         classes: this.extractClasses(content, ext),
         functions: this.extractFunctions(content, ext)
       };
+      
+      // Cache the result
+      fileCache.set(cacheKey, {
+        mtime: stats.mtimeMs,
+        data: fileInfo
+      });
+      
+      return fileInfo;
     } catch (error) {
+      if (error.code !== 'EACCES' && error.code !== 'EPERM') {
+        console.error(`Error analyzing file ${filePath}:`, error.message);
+      }
       return null;
     }
+  }
+
+  async readFileStart(filePath, maxBytes) {
+    return new Promise((resolve, reject) => {
+      const chunks = [];
+      let totalBytes = 0;
+      
+      const stream = createReadStream(filePath, {
+        encoding: 'utf8',
+        highWaterMark: maxBytes
+      });
+      
+      stream.on('data', (chunk) => {
+        const bytesToAdd = Math.min(chunk.length, maxBytes - totalBytes);
+        chunks.push(chunk.slice(0, bytesToAdd));
+        totalBytes += bytesToAdd;
+        
+        if (totalBytes >= maxBytes) {
+          stream.destroy();
+        }
+      });
+      
+      stream.on('end', () => {
+        resolve(chunks.join(''));
+      });
+      
+      stream.on('error', reject);
+    });
+  }
+
+  isDeepDirectory(name) {
+    const deepDirs = [
+      'node_modules',
+      'vendor',
+      'bower_components',
+      '.git',
+      'dist',
+      'build',
+      'out',
+      '.next',
+      '__pycache__',
+      'venv',
+      '.venv'
+    ];
+    
+    return deepDirs.includes(name);
   }
 
   detectTechnology(fileInfo, techStack) {
@@ -364,11 +498,17 @@ class GsumMcpServer {
       if (!isGit) return null;
       
       const branch = execSync('git branch --show-current', { cwd: projectPath }).toString().trim();
-      const remoteUrl = execSync('git remote get-url origin', { cwd: projectPath }).toString().trim().catch(() => '');
+      let remoteUrl = '';
+      try {
+        remoteUrl = execSync('git remote get-url origin', { cwd: projectPath }).toString().trim();
+      } catch (e) {
+        // No remote configured
+      }
       const lastCommit = execSync('git log -1 --format="%H %s"', { cwd: projectPath }).toString().trim();
       
       return { branch, remoteUrl, lastCommit };
     } catch (error) {
+      console.error('Git info error:', error.message);
       return null;
     }
   }
@@ -469,6 +609,18 @@ Path: ${info.path}
       });
     }
 
+    // Report any errors
+    if (info.errors && info.errors.length > 0) {
+      summary += `\n### Analysis Notes\n`;
+      summary += `Some directories or files could not be analyzed:\n`;
+      info.errors.slice(0, 5).forEach(error => {
+        summary += `- ${error}\n`;
+      });
+      if (info.errors.length > 5) {
+        summary += `- ... and ${info.errors.length - 5} more\n`;
+      }
+    }
+
     // Setup instructions
     summary += `\n## SETUP & GETTING STARTED\n\n`;
     
@@ -526,6 +678,8 @@ Path: ${info.path}
       
       if (value === 'file') {
         tree += prefix + extension + (isLastEntry ? '└── ' : '├── ') + key + '\n';
+      } else if (value && value._skipped) {
+        tree += prefix + extension + (isLastEntry ? '└── ' : '├── ') + key + '/ (skipped)\n';
       } else {
         tree += this.formatDirectoryTree(value, key, prefix + extension, isLastEntry);
       }
@@ -624,13 +778,13 @@ Path: ${info.path}
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('gsum MCP server running');
+    console.error('gsum MCP server running (v1.1.0 - optimized)');
   }
 }
 
 // Handle command line arguments
 if (process.argv.includes('--version')) {
-  console.log('1.0.0');
+  console.log('1.1.0');
   process.exit(0);
 }
 

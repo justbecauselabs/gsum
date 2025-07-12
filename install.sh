@@ -186,7 +186,12 @@ echo
 echo "🖥️  Installing MCP server..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━"
 if [ -d "$SCRIPT_DIR/mcp-server" ]; then
-    cp -r "$SCRIPT_DIR/mcp-server" "$HOME/bin/gsum-mcp-server"
+    mkdir -p "$HOME/bin/gsum-mcp-server"
+    cp "$SCRIPT_DIR/mcp-server/index.js" "$HOME/bin/gsum-mcp-server/"
+    cp "$SCRIPT_DIR/mcp-server/package.json" "$HOME/bin/gsum-mcp-server/"
+    if [ -d "$SCRIPT_DIR/mcp-server/test" ]; then
+        cp -r "$SCRIPT_DIR/mcp-server/test" "$HOME/bin/gsum-mcp-server/"
+    fi
     chmod +x "$HOME/bin/gsum-mcp-server/index.js"
     printf "  ${GREEN}✓${NC} Copied MCP server files\n"
     

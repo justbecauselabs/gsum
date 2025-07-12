@@ -495,7 +495,7 @@ output=$(node "$HOME/bin/gsum-mcp-server/index.js" --version 2>&1)
 exit_code=$?
 set -e
 
-if [ $exit_code -eq 0 ] && echo "$output" | grep -q "1.0.0"; then
+if [ $exit_code -eq 0 ] && echo "$output" | grep -q "1.1.0"; then
     echo "${GREEN}✓ PASSED${NC}"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
@@ -533,7 +533,15 @@ echo "=== Test 13: MCP server startup test ==="
 echo -n "Testing: MCP server can start... "
 set +e
 # Start server and immediately kill it
-timeout 2s node "$HOME/bin/gsum-mcp-server/index.js" 2>&1 | grep -q "gsum MCP server running"
+# Use gtimeout if available (macOS with coreutils), otherwise timeout
+if command -v gtimeout > /dev/null 2>&1; then
+    gtimeout 2s node "$HOME/bin/gsum-mcp-server/index.js" 2>&1 | grep -q "gsum MCP server running (v1.1.0 - optimized)"
+elif command -v timeout > /dev/null 2>&1; then
+    timeout 2s node "$HOME/bin/gsum-mcp-server/index.js" 2>&1 | grep -q "gsum MCP server running (v1.1.0 - optimized)"
+else
+    # Fallback for systems without timeout
+    node "$HOME/bin/gsum-mcp-server/index.js" 2>&1 | head -n 10 | grep -q "gsum MCP server running (v1.1.0 - optimized)"
+fi
 grep_exit_code=$?
 set -e
 

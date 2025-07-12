@@ -21,11 +21,22 @@ jobs:
     - name: Install gsum
       run: make install
       
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install MCP server dependencies
+      run: cd mcp-server && npm install
+      
     - name: Verify installation
       run: |
         ls -la ~/bin/smart-gsum
         ls -la ~/bin/gsummarize-wrapper
         ls -la ~/.claude/commands/gsum.md
         
-    - name: Run tests
+    - name: Run MCP server tests
+      run: cd mcp-server && npm test
+        
+    - name: Run integration tests
       run: make test
