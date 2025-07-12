@@ -75,7 +75,48 @@ else
             exit 1
         fi
     else
-        printf "  ${GREEN}✓${NC} Gemini CLI found\n"
+        # Validate it's the real Gemini CLI, not a mock
+        GEMINI_PATH=$(which gemini)
+        if [ -f "$GEMINI_PATH" ]; then
+            # Check if it's a shell script that might be a mock
+            if file "$GEMINI_PATH" | grep -q "shell script"; then
+                # Check for mock patterns
+                if grep -q "mock\|test\|DIRECTORY_SUMMARY\.md" "$GEMINI_PATH" 2>/dev/null; then
+                    printf "${RED}✗ Found mock/test gemini script at: $GEMINI_PATH${NC}\n"
+                    echo "   This appears to be a test script, not the real Gemini CLI"
+                    
+                    # Look for real Gemini CLI
+                    REAL_GEMINI=""
+                    for path in /opt/homebrew/bin/gemini /usr/local/bin/gemini ~/.local/bin/gemini; do
+                        if [ -f "$path" ] && file "$path" | grep -q "Node.js"; then
+                            REAL_GEMINI="$path"
+                            break
+                        fi
+                    done
+                    
+                    if [ -n "$REAL_GEMINI" ]; then
+                        echo "   Found real Gemini CLI at: $REAL_GEMINI"
+                        echo "   Please remove the mock script: rm $GEMINI_PATH"
+                        echo "   Or rename it: mv $GEMINI_PATH ${GEMINI_PATH}.mock"
+                    else
+                        echo "   Please install the real Gemini CLI from:"
+                        echo "   https://github.com/google/generative-ai-docs/tree/main/gemini-cli"
+                    fi
+                    exit 1
+                fi
+            fi
+            
+            # Additional validation - check if gemini has expected behavior
+            if ! gemini --version 2>&1 | grep -q -E "(gemini|version|Gemini)" > /dev/null 2>&1; then
+                printf "${YELLOW}⚠️  Gemini CLI found but may not be properly installed${NC}\n"
+                echo "   Path: $GEMINI_PATH"
+                echo "   Could not validate version information"
+            else
+                printf "  ${GREEN}✓${NC} Gemini CLI found and validated\n"
+            fi
+        else
+            printf "  ${GREEN}✓${NC} Gemini CLI found\n"
+        fi
     fi
 fi
 

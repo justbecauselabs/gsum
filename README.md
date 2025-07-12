@@ -215,22 +215,77 @@ A: All analysis happens locally. Only sent to Gemini when generating summaries.
 
 ## 🐛 Troubleshooting
 
-### "command not found"
+### Run Diagnostics First
+```bash
+smart-gsum --diagnose
+```
+This will check your entire gsum installation and identify any issues.
+
+### Common Issues
+
+#### "command not found"
 ```bash
 source ~/.zshrc  # or ~/.bashrc
 ```
 
-### "Gemini not found"
+#### "Gemini not found"
 Install Gemini CLI first: [Gemini CLI Guide](https://github.com/google/gemini-cli)
 
-### "MCP server not working"
+#### "Getting short/mock output (e.g., 67 lines)"
+This usually means you have a mock `gemini` script intercepting calls:
+```bash
+# Check which gemini is being used
+which gemini
+
+# If it's in ~/bin/gemini, check if it's a mock
+head ~/bin/gemini
+
+# Fix by removing or renaming the mock
+mv ~/bin/gemini ~/bin/gemini.mock
+hash -r  # Clear shell's command cache
+
+# Verify real Gemini is now found
+which gemini  # Should show /opt/homebrew/bin/gemini or similar
+```
+
+#### "MCP server not working"
 1. Ensure Node.js v18+ is installed: `node --version`
 2. Check MCP server installation: `node ~/bin/gsum-mcp-server/index.js --version`
 3. Restart Gemini CLI to load the MCP server
 4. Check Gemini config: `cat ~/.config/gemini/config.json`
 
-### "Claude command not working"
+#### "Gemini API quota exceeded"
+```
+Error: Quota exceeded for quota metric 'Gemini 2.5 Pro Requests'
+```
+- Wait until tomorrow for quota reset
+- Check your Google Cloud console for quota status
+- Consider upgrading your API plan if needed
+
+#### "summarize_directory tool not found"
+The MCP server isn't properly connected to Gemini:
+1. Restart Gemini CLI completely
+2. Check ~/.config/gemini/config.json has the gsum MCP server configured
+3. Ensure the MCP server path is correct and absolute
+
+#### "Claude command not working"
 Make sure you have Claude Desktop with slash commands enabled.
+
+### Manual Validation Steps
+```bash
+# 1. Check if real Gemini CLI is installed
+/opt/homebrew/bin/gemini --version
+
+# 2. Test MCP server directly
+node ~/bin/gsum-mcp-server/index.js --version
+
+# 3. List Gemini's available tools
+gemini --yolo << 'EOF'
+List all available tools
+EOF
+
+# 4. Look for "summarize_directory" in the output
+```
 
 ## 🤝 Contributing
 
