@@ -1,0 +1,144 @@
+#!/bin/bash
+
+# Smart directory summarizer that checks git state before regenerating
+
+TARGET_DIR="${1:-.}"
+DIFF_THRESHOLD=500  # Lines of diff before we consider it "non-trivial"
+
+# Function to get current git branch name
+get_branch_name() {
+    cd "$TARGET_DIR" 2>/dev/null && git branch --show-current 2>/dev/null
+}
+
+# Function to get summary file name (branch-specific if needed)
+get_summary_file() {
+    local branch=$(get_branch_name)
+    if [[ -n "$branch" ]] && [[ "$branch" != "main" ]] && [[ "$branch" != "master" ]]; then
+        echo "$TARGET_DIR/DIRECTORY_SUMMARY.${branch}.md"
+    else
+        echo "$TARGET_DIR/DIRECTORY_SUMMARY.md"
+    fi
+}
+
+# Function to extract git hash from summary file
+get_stored_hash() {
+    local summary_file="$1"
+    if [[ -f "$summary_file" ]]; then
+        grep -E "^<!-- git-hash: .+ -->" "$summary_file" | sed 's/<!-- git-hash: \(.*\) -->/\1/'
+    fi
+}
+
+# Function to get current git hash
+get_current_hash() {
+    cd "$TARGET_DIR" 2>/dev/null && git rev-parse HEAD 2>/dev/null
+}
+
+# Function to check if commits are connected
+are_commits_connected() {
+    local old_hash="$1"
+    local current_hash="$2"
+    cd "$TARGET_DIR" && git merge-base --is-ancestor "$old_hash" "$current_hash" 2>/dev/null
+}
+
+# Function to check if diff is trivial
+is_diff_trivial() {
+    local old_hash="$1"
+    local current_hash="$2"
+    
+    # Count lines of diff
+    local diff_lines=$(cd "$TARGET_DIR" && git diff "$old_hash..$current_hash" --stat | tail -1 | awk '{print $4 + $6}')
+    
+    if [[ -z "$diff_lines" ]]; then
+        diff_lines=0
+    fi
+    
+    [[ $diff_lines -lt $DIFF_THRESHOLD ]]
+}
+
+# Main logic
+main() {
+    local summary_file=$(get_summary_file)
+    
+    # EARLY EXIT: If no summary file exists, generate immediately
+    if [[ ! -f "$summary_file" ]]; then
+        echo "No existing summary found. Generating fresh summary..."
+        ~/bin/gsummarize-wrapper "$TARGET_DIR"
+        
+        # Append git hash to the generated file
+        local current_hash=$(get_current_hash)
+        if [[ -f "$summary_file" ]] && [[ -n "$current_hash" ]]; then
+            echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
+        fi
+        return
+    fi
+    
+    local stored_hash=$(get_stored_hash "$summary_file")
+    local current_hash=$(get_current_hash)
+    
+    # If not a git repo, just regenerate
+    if [[ -z "$current_hash" ]]; then
+        echo "Not a git repository. Generating fresh summary..."
+        ~/bin/gsummarize-wrapper "$TARGET_DIR"
+        return
+    fi
+    
+    # If no stored hash, regenerate
+    if [[ -z "$stored_hash" ]]; then
+        echo "No git hash in existing summary. Regenerating..."
+        ~/bin/gsummarize-wrapper "$TARGET_DIR"
+        if [[ -f "$summary_file" ]]; then
+            echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
+        fi
+        return
+    fi
+    
+    # If same hash, just load existing
+    if [[ "$stored_hash" == "$current_hash" ]]; then
+        echo "Summary is up to date (no changes since last summary)."
+        echo "Loading existing summary..."
+        cat "$summary_file"
+        return
+    fi
+    
+    # Check if commits are connected
+    if ! are_commits_connected "$stored_hash" "$current_hash"; then
+        echo "Branch has diverged from stored hash. Creating branch-specific summary..."
+        # Force use branch-specific file
+        local branch=$(get_branch_name)
+        if [[ -n "$branch" ]]; then
+            summary_file="DIRECTORY_SUMMARY.${branch}.md"
+        fi
+        ~/bin/gsummarize-wrapper "$TARGET_DIR"
+        if [[ -f "$summary_file" ]]; then
+            echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
+        fi
+        return
+    fi
+    
+    # Check if diff is trivial (only between stored hash and current HEAD)
+    if is_diff_trivial "$stored_hash" "$current_hash"; then
+        echo "Changes are trivial. Loading existing summary with diff..."
+        echo "=== EXISTING SUMMARY ==="
+        cat "$summary_file"
+        echo -e "\n=== CHANGES SINCE LAST SUMMARY ==="
+        echo "From: $stored_hash"
+        echo "To:   $current_hash"
+        echo ""
+        cd "$TARGET_DIR" && git diff "$stored_hash..$current_hash" --stat
+        echo -e "\n--- Detailed changes ---"
+        cd "$TARGET_DIR" && git log --oneline "$stored_hash..$current_hash"
+    else
+        echo "Significant changes detected. Regenerating summary..."
+        ~/bin/gsummarize-wrapper "$TARGET_DIR"
+        
+        # Update git hash in the generated file
+        if [[ -f "$summary_file" ]]; then
+            # Remove old hash if exists
+            sed -i '' '/<!-- git-hash:/d' "$summary_file"
+            # Add new hash
+            echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
+        fi
+    fi
+}
+
+main "$@"

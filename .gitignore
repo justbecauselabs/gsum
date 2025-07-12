@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Test directories
+test/
+tmp/
+
+# Generated summaries (these should be project-specific)
+DIRECTORY_SUMMARY*.md
+ARCHITECTURE.md
