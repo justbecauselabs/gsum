@@ -5,14 +5,14 @@ help:
 	@echo "gsum - Smart AI Context Summarizer"
 	@echo ""
 	@echo "Available commands:"
-	@echo "  make install  - Install gsum (first time setup)"
-	@echo "  make update   - Update to latest version"
+	@echo "  make install  - Install or update gsum"
+	@echo "  make update   - Update to latest version from GitHub"
 	@echo "  make test     - Run test suite"
 	@echo "  make help     - Show this help message"
 
-# Install from scratch
+# Install or update
 install:
-	@echo "🚀 Installing gsum..."
+	@echo "🚀 Installing/updating gsum..."
 	@./install.sh
 
 # Update to latest version

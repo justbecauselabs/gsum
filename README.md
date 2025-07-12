@@ -118,9 +118,17 @@ Claude sees what changed and knows your coding standards!
 ```
 
 ### Update to Latest Version
-```
+
+If you cloned the repo:
+```bash
 cd gsum
-make update
+make install  # This updates existing installations too
+```
+
+Or pull latest changes from GitHub:
+```bash
+cd gsum
+make update  # Fetches from GitHub and updates
 ```
 
 ### Customize Behavior

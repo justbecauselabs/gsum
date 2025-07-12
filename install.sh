@@ -9,6 +9,16 @@ echo "🤖 AI Context Summarizer Installer"
 echo "=================================="
 echo
 
+# Check if this is an update
+IS_UPDATE=false
+if [ -f "$HOME/bin/smart-gsum" ] || [ -f "$HOME/bin/gsummarize-wrapper" ]; then
+    IS_UPDATE=true
+    echo "📦 Detected existing installation - updating..."
+else
+    echo "🚀 Installing gsum for the first time..."
+fi
+echo
+
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -146,17 +156,27 @@ fi
 
 # Success message
 echo
-echo "🎉 ${GREEN}Installation complete!${NC}"
+if [ "$IS_UPDATE" = true ]; then
+    echo "🎉 ${GREEN}Update complete!${NC}"
+else
+    echo "🎉 ${GREEN}Installation complete!${NC}"
+fi
 echo
 echo "Next steps:"
-echo "1. Reload your shell: ${YELLOW}source $SHELL_RC${NC}"
-echo "2. In Claude, type: ${YELLOW}/gsum${NC}"
+if [ "$IS_UPDATE" = false ]; then
+    echo "1. Reload your shell: ${YELLOW}source $SHELL_RC${NC}"
+    echo "2. In Claude, type: ${YELLOW}/gsum${NC}"
+else
+    echo "- In Claude, type: ${YELLOW}/gsum${NC}"
+fi
 echo
 echo "Usage:"
 echo "  /gsum              - Analyze current directory"
 echo "  /gsum /path/to/dir - Analyze specific directory"
 echo
-echo "The first run will generate a detailed architecture document."
-echo "Subsequent runs will be smart about regeneration."
+if [ "$IS_UPDATE" = false ]; then
+    echo "The first run will generate a detailed architecture document."
+    echo "Subsequent runs will be smart about regeneration."
+fi
 echo
 echo "Happy coding! 🚀"
