@@ -109,6 +109,43 @@ is_diff_trivial() {
     [[ $diff_output -lt $DIFF_THRESHOLD ]]
 }
 
+# Helper function to run gsummarize-wrapper with proper error handling
+run_gsummarize_wrapper() {
+    local target_dir="$1"
+    local temp_file=$(mktemp)
+    local temp_error=$(mktemp)
+    
+    ~/bin/gsummarize-wrapper "$target_dir" > "$temp_file" 2> "$temp_error"
+    local exit_code=$?
+    
+    # Check if generation failed
+    if [ $exit_code -ne 0 ]; then
+        echo "❌ ERROR: Failed to generate summary" >&2
+        if [ -s "$temp_error" ]; then
+            cat "$temp_error" >&2
+        fi
+        rm -f "$temp_file" "$temp_error"
+        return $exit_code
+    fi
+    
+    # Check if we got output
+    if [ ! -s "$temp_file" ]; then
+        echo "❌ ERROR: No summary content was generated" >&2
+        if [ -s "$temp_error" ]; then
+            echo "" >&2
+            echo "Error details:" >&2
+            cat "$temp_error" >&2
+        fi
+        rm -f "$temp_file" "$temp_error"
+        return 1
+    fi
+    
+    # Success - output the content and clean up
+    cat "$temp_file"
+    rm -f "$temp_file" "$temp_error"
+    return 0
+}
+
 # Function to generate ephemeral summary to stdout
 generate_ephemeral() {
     # Save current directory
@@ -117,24 +154,21 @@ generate_ephemeral() {
     # Change to target directory
     cd "$TARGET_DIR" || exit 1
     
-    # Generate the summary (creates DIRECTORY_SUMMARY.md)
-    ~/bin/gsummarize-wrapper . > /dev/null 2>&1
-    
-    # Check if DIRECTORY_SUMMARY.md was created
-    if [ -f "DIRECTORY_SUMMARY.md" ]; then
-        # Output the content to stdout
-        cat "DIRECTORY_SUMMARY.md"
-        
-        # Remove the file since this is ephemeral
-        rm -f "DIRECTORY_SUMMARY.md"
-    else
-        echo "Error: Failed to generate summary" >&2
-        cd "$current_dir"
-        return 1
-    fi
+    # Generate the summary using helper function
+    local summary_content
+    summary_content=$(run_gsummarize_wrapper ".")
+    local exit_code=$?
     
     # Return to original directory
     cd "$current_dir"
+    
+    # Check if generation succeeded
+    if [ $exit_code -ne 0 ]; then
+        return $exit_code
+    fi
+    
+    # Output the summary content
+    echo "$summary_content"
 }
 
 # Function to save persistent summary with git-aware logic
@@ -146,19 +180,24 @@ save_persistent() {
     if [[ ! -f "$summary_file" ]]; then
         echo "No existing ARCHITECTURE.gsum.md found. Generating fresh summary..."
         
-        # Generate to temp file first
-        local temp_file=$(mktemp)
-        ~/bin/gsummarize-wrapper "$TARGET_DIR" > "$temp_file" 2>&1
+        # Generate the summary using helper function
+        local summary_content
+        summary_content=$(run_gsummarize_wrapper "$TARGET_DIR")
+        local exit_code=$?
         
-        # Replace DIRECTORY_SUMMARY.md with ARCHITECTURE.gsum.md in the output
-        sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' "$temp_file" > "$summary_file"
+        # Check if generation failed
+        if [ $exit_code -ne 0 ]; then
+            return $exit_code
+        fi
+        
+        # Replace DIRECTORY_SUMMARY.md with ARCHITECTURE.gsum.md in the output and save
+        echo "$summary_content" | sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' > "$summary_file"
         
         # Append git hash if in a git repo
         if [[ -n "$current_hash" ]]; then
             echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
         fi
         
-        rm -f "$temp_file"
         echo "Successfully generated ARCHITECTURE.gsum.md"
         return
     fi
@@ -168,10 +207,15 @@ save_persistent() {
     # If not a git repo, just regenerate
     if [[ -z "$current_hash" ]]; then
         echo "Not a git repository. Regenerating ARCHITECTURE.gsum.md..."
-        local temp_file=$(mktemp)
-        ~/bin/gsummarize-wrapper "$TARGET_DIR" > "$temp_file" 2>&1
-        sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' "$temp_file" > "$summary_file"
-        rm -f "$temp_file"
+        local summary_content
+        summary_content=$(run_gsummarize_wrapper "$TARGET_DIR")
+        local exit_code=$?
+        
+        if [ $exit_code -ne 0 ]; then
+            return $exit_code
+        fi
+        
+        echo "$summary_content" | sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' > "$summary_file"
         echo "Successfully updated ARCHITECTURE.gsum.md"
         return
     fi
@@ -179,11 +223,16 @@ save_persistent() {
     # If no stored hash, regenerate
     if [[ -z "$stored_hash" ]]; then
         echo "No git hash in existing summary. Regenerating..."
-        local temp_file=$(mktemp)
-        ~/bin/gsummarize-wrapper "$TARGET_DIR" > "$temp_file" 2>&1
-        sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' "$temp_file" > "$summary_file"
+        local summary_content
+        summary_content=$(run_gsummarize_wrapper "$TARGET_DIR")
+        local exit_code=$?
+        
+        if [ $exit_code -ne 0 ]; then
+            return $exit_code
+        fi
+        
+        echo "$summary_content" | sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' > "$summary_file"
         echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
-        rm -f "$temp_file"
         echo "Successfully updated ARCHITECTURE.gsum.md"
         return
     fi
@@ -200,15 +249,20 @@ save_persistent() {
         echo "ARCHITECTURE.gsum.md is up to date."
     else
         echo "Significant changes detected. Regenerating ARCHITECTURE.gsum.md..."
-        local temp_file=$(mktemp)
-        ~/bin/gsummarize-wrapper "$TARGET_DIR" > "$temp_file" 2>&1
-        sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' "$temp_file" > "$summary_file"
+        local summary_content
+        summary_content=$(run_gsummarize_wrapper "$TARGET_DIR")
+        local exit_code=$?
+        
+        if [ $exit_code -ne 0 ]; then
+            return $exit_code
+        fi
+        
+        echo "$summary_content" | sed 's/DIRECTORY_SUMMARY\.md/ARCHITECTURE.gsum.md/g' > "$summary_file"
         
         # Remove old hash and add new one
         sed -i '' '/<!-- git-hash:/d' "$summary_file"
         echo -e "\n<!-- git-hash: $current_hash -->" >> "$summary_file"
         
-        rm -f "$temp_file"
         echo "Successfully updated ARCHITECTURE.gsum.md"
     fi
 }
