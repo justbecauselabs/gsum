@@ -20,11 +20,11 @@ else
 fi
 echo
 
-# Colors for output  
-GREEN=$'\033[0;32m'
-YELLOW=$'\033[1;33m'
-RED=$'\033[0;31m'
-NC=$'\033[0m' # No Color
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
 # Detect shell
 if [ -n "$ZSH_VERSION" ]; then
@@ -34,7 +34,7 @@ elif [ -n "$BASH_VERSION" ]; then
     SHELL_RC="$HOME/.bashrc"
     SHELL_NAME="bash"
 else
-    echo "${RED}Error: Unsupported shell. Please use bash or zsh.${NC}"
+    printf "${RED}Error: Unsupported shell. Please use bash or zsh.${NC}\n"
     exit 1
 fi
 
@@ -47,11 +47,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 # Check if running in CI
 if [ -n "$CI" ]; then
-    echo "${YELLOW}⚠️  Running in CI environment - skipping prerequisite checks${NC}"
+    printf "${YELLOW}⚠️  Running in CI environment - skipping prerequisite checks${NC}\\n"
 else
     # Check for Claude
     if ! command -v claude &> /dev/null; then
-        echo "${YELLOW}⚠️  Claude CLI not found${NC}"
+        printf "${YELLOW}⚠️  Claude CLI not found${NC}\n"
         echo "   Please install Claude Desktop and the CLI first:"
         echo "   https://claude.ai/download"
         echo
@@ -61,12 +61,12 @@ else
             exit 1
         fi
     else
-        echo "${GREEN}✓${NC} Claude CLI found"
+        printf "  ${GREEN}✓${NC} Claude CLI found\n"
     fi
 
     # Check for Gemini
     if ! command -v gemini &> /dev/null; then
-        echo "${YELLOW}⚠️  Gemini CLI not found${NC}"
+        printf "${YELLOW}⚠️  Gemini CLI not found${NC}\n"
         echo "   Please install Gemini CLI with MCP support first"
         echo
         read -p "Continue anyway? (y/N) " -n 1 -r
@@ -75,28 +75,28 @@ else
             exit 1
         fi
     else
-        echo "${GREEN}✓${NC} Gemini CLI found"
+        printf "  ${GREEN}✓${NC} Gemini CLI found\n"
     fi
 fi
 
 # Check for Git
 if ! command -v git &> /dev/null; then
-    echo "${RED}✗ Git not found. Please install git first.${NC}"
+    printf "${RED}✗ Git not found. Please install git first.${NC}\n"
     exit 1
 else
-    echo "${GREEN}✓${NC} Git found"
+    printf "  ${GREEN}✓${NC} Git found\n"
 fi
 
 # Check for Node.js (required for MCP server)
 if ! command -v node &> /dev/null; then
-    echo "${RED}✗ Node.js not found. Please install Node.js first.${NC}"
+    printf "${RED}✗ Node.js not found. Please install Node.js first.${NC}\n"
     echo "   Download from: https://nodejs.org/"
     exit 1
 else
     # Check Node version (require v18+)
     NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
     if [ "$NODE_VERSION" -lt 18 ]; then
-        echo "${YELLOW}⚠️  Node.js version is too old (v$NODE_VERSION)${NC}"
+        printf "${YELLOW}⚠️  Node.js version is too old (v$NODE_VERSION)${NC}\n"
         echo "   gsum MCP server requires Node.js v18 or higher"
         echo "   Please update Node.js: https://nodejs.org/"
         if [ -z "$CI" ]; then
@@ -107,17 +107,17 @@ else
             fi
         fi
     else
-        echo "${GREEN}✓${NC} Node.js found (v$NODE_VERSION)"
+        printf "  ${GREEN}✓${NC} Node.js found (v$NODE_VERSION)\n"
     fi
 fi
 
 # Check for npm (required for MCP server dependencies)
 if ! command -v npm &> /dev/null; then
-    echo "${RED}✗ npm not found. Please install npm first.${NC}"
+    printf "${RED}✗ npm not found. Please install npm first.${NC}\n"
     echo "   npm should come with Node.js installation"
     exit 1
 else
-    echo "${GREEN}✓${NC} npm found"
+    printf "  ${GREEN}✓${NC} npm found\n"
 fi
 
 # Create directories
@@ -126,7 +126,7 @@ echo "📁 Creating directories..."
 echo "━━━━━━━━━━━━━━━━━━━━━━"
 mkdir -p "$HOME/bin"
 mkdir -p "$HOME/.claude/commands"
-echo "${GREEN}✓${NC} Directories created"
+printf "  ${GREEN}✓${NC} Directories created\n"
 
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -140,9 +140,9 @@ echo "━━━━━━━━━━━━━━━━━━━━━"
 if [ -f "$SCRIPT_DIR/bin/smart-gsum" ]; then
     cp "$SCRIPT_DIR/bin/smart-gsum" "$HOME/bin/"
     chmod +x "$HOME/bin/smart-gsum"
-    echo "${GREEN}✓${NC} Installed smart-gsum"
+    printf "  ${GREEN}✓${NC} Installed smart-gsum\n"
 else
-    echo "${RED}✗ smart-gsum not found in $SCRIPT_DIR/bin/${NC}"
+    printf "${RED}✗ smart-gsum not found in $SCRIPT_DIR/bin/${NC}\n"
     exit 1
 fi
 
@@ -150,34 +150,34 @@ fi
 if [ -f "$SCRIPT_DIR/bin/gsummarize-wrapper" ]; then
     cp "$SCRIPT_DIR/bin/gsummarize-wrapper" "$HOME/bin/"
     chmod +x "$HOME/bin/gsummarize-wrapper"
-    echo "${GREEN}✓${NC} Installed gsummarize-wrapper"
+    printf "  ${GREEN}✓${NC} Installed gsummarize-wrapper\n"
 else
-    echo "${RED}✗ gsummarize-wrapper not found in $SCRIPT_DIR/bin/${NC}"
+    printf "${RED}✗ gsummarize-wrapper not found in $SCRIPT_DIR/bin/${NC}\n"
     exit 1
 fi
 
 # Copy Claude commands
 if [ -f "$SCRIPT_DIR/claude-commands/gsum.md" ]; then
     cp "$SCRIPT_DIR/claude-commands/gsum.md" "$HOME/.claude/commands/"
-    echo "${GREEN}✓${NC} Installed Claude /gsum command"
+    printf "  ${GREEN}✓${NC} Installed Claude /gsum command\n"
 else
-    echo "${RED}✗ gsum.md not found in $SCRIPT_DIR/claude-commands/${NC}"
+    printf "${RED}✗ gsum.md not found in $SCRIPT_DIR/claude-commands/${NC}\n"
     exit 1
 fi
 
 if [ -f "$SCRIPT_DIR/claude-commands/gsum-save.md" ]; then
     cp "$SCRIPT_DIR/claude-commands/gsum-save.md" "$HOME/.claude/commands/"
-    echo "${GREEN}✓${NC} Installed Claude /gsum-save command"
+    printf "  ${GREEN}✓${NC} Installed Claude /gsum-save command\n"
 else
-    echo "${RED}✗ gsum-save.md not found in $SCRIPT_DIR/claude-commands/${NC}"
+    printf "${RED}✗ gsum-save.md not found in $SCRIPT_DIR/claude-commands/${NC}\n"
     exit 1
 fi
 
 if [ -f "$SCRIPT_DIR/claude-commands/gsum-plan.md" ]; then
     cp "$SCRIPT_DIR/claude-commands/gsum-plan.md" "$HOME/.claude/commands/"
-    echo "${GREEN}✓${NC} Installed Claude /gsum-plan command"
+    printf "  ${GREEN}✓${NC} Installed Claude /gsum-plan command\n"
 else
-    echo "${RED}✗ gsum-plan.md not found in $SCRIPT_DIR/claude-commands/${NC}"
+    printf "${RED}✗ gsum-plan.md not found in $SCRIPT_DIR/claude-commands/${NC}\n"
     exit 1
 fi
 
@@ -188,38 +188,38 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━"
 if [ -d "$SCRIPT_DIR/mcp-server" ]; then
     cp -r "$SCRIPT_DIR/mcp-server" "$HOME/bin/gsum-mcp-server"
     chmod +x "$HOME/bin/gsum-mcp-server/index.js"
-    echo "${GREEN}✓${NC} Copied MCP server files"
+    printf "  ${GREEN}✓${NC} Copied MCP server files\n"
     
     # Install npm dependencies
     if command -v npm &> /dev/null; then
-        echo "Installing MCP server dependencies..."
+        echo "  Installing MCP server dependencies..."
         cd "$HOME/bin/gsum-mcp-server"
         npm install --silent
         
         # Validate installation
         if [ -f "node_modules/@modelcontextprotocol/sdk/package.json" ]; then
-            echo "${GREEN}✓${NC} Installed MCP server dependencies"
+            printf "  ${GREEN}✓${NC} Installed MCP server dependencies\n"
         else
-            echo "${RED}✗ Failed to install MCP server dependencies${NC}"
+            printf "${RED}✗ Failed to install MCP server dependencies${NC}\n"
             echo "   Try running: cd ~/bin/gsum-mcp-server && npm install"
             exit 1
         fi
         cd - > /dev/null
     else
-        echo "${YELLOW}⚠️  npm not found - MCP server dependencies not installed${NC}"
+        printf "${YELLOW}⚠️  npm not found - MCP server dependencies not installed${NC}\n"
         echo "   Run 'cd ~/bin/gsum-mcp-server && npm install' after installing npm"
     fi
     
     # Validate MCP server can run
-    echo "Validating MCP server..."
+    echo "  Validating MCP server..."
     if node "$HOME/bin/gsum-mcp-server/index.js" --version > /dev/null 2>&1; then
-        echo "${GREEN}✓${NC} MCP server validated"
+        printf "  ${GREEN}✓${NC} MCP server validated\n"
     else
-        echo "${YELLOW}⚠️  Could not validate MCP server${NC}"
+        printf "${YELLOW}⚠️  Could not validate MCP server${NC}\n"
         echo "   The server may still work when called by Gemini"
     fi
 else
-    echo "${RED}✗ MCP server directory not found in $SCRIPT_DIR/${NC}"
+    printf "${RED}✗ MCP server directory not found in $SCRIPT_DIR/${NC}\n"
     exit 1
 fi
 
@@ -230,19 +230,19 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 # Check if aliases already exist
 if grep -q "alias gyolo=" "$SHELL_RC" 2>/dev/null; then
-    echo "${YELLOW}⚠️  gyolo alias already exists in $SHELL_RC${NC}"
+    printf "${YELLOW}⚠️  gyolo alias already exists in $SHELL_RC${NC}\n"
 else
     echo "" >> "$SHELL_RC"
     echo "# AI Context Summarizer aliases" >> "$SHELL_RC"
     echo 'alias gyolo="gemini --yolo"' >> "$SHELL_RC"
-    echo "${GREEN}✓${NC} Added gyolo alias"
+    printf "  ${GREEN}✓${NC} Added gyolo alias\n"
 fi
 
 if grep -q "alias gsummarize=" "$SHELL_RC" 2>/dev/null; then
-    echo "${YELLOW}⚠️  gsummarize alias already exists in $SHELL_RC${NC}"
+    printf "${YELLOW}⚠️  gsummarize alias already exists in $SHELL_RC${NC}\n"
 else
     echo 'alias gsummarize="~/bin/gsummarize-wrapper"' >> "$SHELL_RC"
-    echo "${GREEN}✓${NC} Added gsummarize alias"
+    printf "  ${GREEN}✓${NC} Added gsummarize alias\n"
 fi
 
 # Add ~/bin to PATH if not already there
@@ -250,9 +250,9 @@ if [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
     echo "" >> "$SHELL_RC"
     echo "# Add local bin to PATH" >> "$SHELL_RC"
     echo 'export PATH="$HOME/bin:$PATH"' >> "$SHELL_RC"
-    echo "${GREEN}✓${NC} Added ~/bin to PATH"
+    printf "  ${GREEN}✓${NC} Added ~/bin to PATH\n"
 else
-    echo "${GREEN}✓${NC} ~/bin already in PATH"
+    printf "  ${GREEN}✓${NC} ~/bin already in PATH\n"
 fi
 
 # Configure Gemini MCP settings
@@ -268,13 +268,13 @@ mkdir -p "$GEMINI_CONFIG_DIR"
 
 # Check if config file exists
 if [ -f "$GEMINI_CONFIG_FILE" ]; then
-    echo "${YELLOW}⚠️  Existing Gemini config found${NC}"
+    printf "${YELLOW}⚠️  Existing Gemini config found${NC}\n"
     
     # Check if gsum MCP server is already configured
     if grep -q "gsum-mcp-server" "$GEMINI_CONFIG_FILE" 2>/dev/null; then
-        echo "${GREEN}✓${NC} gsum MCP server already configured in Gemini"
+        printf "  ${GREEN}✓${NC} gsum MCP server already configured in Gemini\n"
     else
-        echo "Adding gsum MCP server to existing Gemini config..."
+        echo "  Adding gsum MCP server to existing Gemini config..."
         
         # Create backup
         cp "$GEMINI_CONFIG_FILE" "$GEMINI_CONFIG_FILE.backup"
@@ -311,13 +311,13 @@ with open(config_file, 'w') as f:
 print('✓ Added gsum MCP server to Gemini config')
 "
             if [ $? -eq 0 ]; then
-                echo "${GREEN}✓${NC} Successfully updated Gemini config"
+                printf "  ${GREEN}✓${NC} Successfully updated Gemini config\n"
             else
-                echo "${RED}✗ Failed to update Gemini config${NC}"
+                printf "${RED}✗ Failed to update Gemini config${NC}\n"
                 echo "   Please manually add the MCP server to $GEMINI_CONFIG_FILE"
             fi
         else
-            echo "${YELLOW}⚠️  Python not found - cannot automatically update Gemini config${NC}"
+            printf "${YELLOW}⚠️  Python not found - cannot automatically update Gemini config${NC}\n"
             echo "   Please manually add the following to your Gemini config at $GEMINI_CONFIG_FILE:"
             echo
             echo '   "mcpServers": {'
@@ -331,7 +331,7 @@ print('✓ Added gsum MCP server to Gemini config')
     fi
 else
     # Create new config file
-    echo "Creating new Gemini config..."
+    echo "  Creating new Gemini config..."
     cat > "$GEMINI_CONFIG_FILE" << EOF
 {
   "mcpServers": {
@@ -343,40 +343,46 @@ else
   }
 }
 EOF
-    echo "${GREEN}✓${NC} Created Gemini config with gsum MCP server"
+    printf "  ${GREEN}✓${NC} Created Gemini config with gsum MCP server\n"
 fi
 
 # Success message
 echo
+echo
 if [ "$IS_UPDATE" = true ]; then
-    echo "🎉 ${GREEN}Update complete!${NC}"
+    printf "🎉 ${GREEN}Update complete!${NC}\n"
 else
-    echo "🎉 ${GREEN}Installation complete!${NC}"
+    printf "🎉 ${GREEN}Installation complete!${NC}\n"
 fi
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo
-echo "Next steps:"
+echo "📋 Next steps:"
 if [ "$IS_UPDATE" = false ]; then
-    echo "1. Reload your shell: ${YELLOW}source $SHELL_RC${NC}"
-    echo "2. Restart Gemini CLI to load the new MCP server"
-    echo "3. In Claude, try the new commands!"
+    printf "  1. Reload your shell: ${YELLOW}source $SHELL_RC${NC}\n"
+    echo "  2. Restart Gemini CLI to load the new MCP server"
+    echo "  3. In Claude, try the new commands!"
 else
-    echo "- Your Claude commands have been updated!"
-    echo "- Restart Gemini CLI to load any MCP server updates"
+    echo "  • Your Claude commands have been updated!"
+    echo "  • Restart Gemini CLI to load any MCP server updates"
 fi
 echo
-echo "Available Claude Commands:"
-echo "  ${YELLOW}/gsum${NC}              - Generate ephemeral project summary (always fresh)"
-echo "  ${YELLOW}/gsum-save${NC}         - Create/update persistent ARCHITECTURE.gsum.md"
-echo "  ${YELLOW}/gsum-plan${NC} \"task\"  - Generate implementation plan for a task"
+echo "🤖 Available Claude Commands:"
+echo "────────────────────────────"
+printf "  ${YELLOW}/gsum${NC}              - Generate ephemeral project summary (always fresh)\n"
+printf "  ${YELLOW}/gsum-save${NC}         - Create/update persistent ARCHITECTURE.gsum.md\n"
+printf "  ${YELLOW}/gsum-plan${NC} \"task\"  - Generate implementation plan for a task\n"
 echo
-echo "MCP Server Status:"
-echo "  ${GREEN}✓${NC} gsum MCP server installed at: ~/bin/gsum-mcp-server"
-echo "  ${GREEN}✓${NC} Configured in Gemini settings"
+echo "📡 MCP Server Status:"
+echo "────────────────────"
+printf "  ${GREEN}✓${NC} gsum MCP server installed at: ~/bin/gsum-mcp-server\n"
+printf "  ${GREEN}✓${NC} Configured in Gemini settings\n"
 echo
-echo "Examples:"
+echo "💡 Examples:"
 echo "  /gsum                    # Summarize current directory"
 echo "  /gsum ./src              # Summarize specific directory"
 echo "  /gsum-save               # Create ARCHITECTURE.gsum.md in current dir"
 echo "  /gsum-plan \"Add user authentication feature\""
 echo
+echo
 echo "Happy coding! 🚀"
+echo
