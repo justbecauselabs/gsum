@@ -1,9 +1,9 @@
 # macOS
 .DS_Store
 
-# Test directories
-test/
-tmp/
+# Test directories (excluding MCP server tests)
+/test/
+/tmp/
 
 # Example entries for gsum outputs
 # Uncomment based on your workflow needs (see README for guidance)
