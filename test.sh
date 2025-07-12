@@ -161,8 +161,8 @@ echo "Setting up test environment..."
 mkdir -p "$TEST_PROJECT"
 cd "$TEST_PROJECT"
 
-# Initialize git repo
-git init --quiet
+# Initialize git repo with main branch
+git init --quiet -b main
 git config user.email "test@example.com"
 git config user.name "Test User"
 
