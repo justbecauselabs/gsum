@@ -1,0 +1,103 @@
+#!/bin/bash
+# Debug wrapper for gsum commands to understand what's happening
+
+# Create debug log directory
+DEBUG_DIR="$HOME/.gsum-debug"
+mkdir -p "$DEBUG_DIR"
+
+# Create unique log file for this execution
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+PID=$$
+LOG_FILE="$DEBUG_DIR/gsum-debug-${TIMESTAMP}-${PID}.log"
+
+# Function to log with timestamp
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] $*" >> "$LOG_FILE"
+}
+
+# Log initial state
+log "=== GSUM DEBUG SESSION START ==="
+log "Script: $0"
+log "Arguments: $*"
+log "Working Directory: $(pwd)"
+log "User: $(whoami)"
+log "PATH: $PATH"
+log "Shell: $SHELL"
+log "Parent PID: $PPID"
+log "Current PID: $$"
+
+# Check if running in Claude context
+if [ -n "$CLAUDE_SESSION_ID" ] || [ -n "$CLAUDE_CODE" ]; then
+    log "Running in Claude Code context"
+    log "CLAUDE_SESSION_ID: ${CLAUDE_SESSION_ID:-not set}"
+    log "CLAUDE_CODE: ${CLAUDE_CODE:-not set}"
+fi
+
+# Check which commands are available
+log ""
+log "=== COMMAND AVAILABILITY CHECK ==="
+for cmd in smart-gsum gsummarize-wrapper gemini; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+        log "$cmd: $(command -v "$cmd")"
+        log "$cmd version/help: $(($cmd --help 2>&1 || echo 'no help') | head -1)"
+    else
+        log "$cmd: NOT FOUND"
+    fi
+done
+
+# Log environment variables
+log ""
+log "=== RELEVANT ENVIRONMENT VARIABLES ==="
+env | grep -E "(GSUM|GEMINI|CLAUDE|PATH)" | while read -r line; do
+    log "ENV: $line"
+done
+
+# Execute the actual command
+log ""
+log "=== EXECUTING COMMAND ==="
+COMMAND="$1"
+shift
+
+case "$COMMAND" in
+    "gsum")
+        log "Executing: smart-gsum $*"
+        smart-gsum "$@" 2>&1 | tee -a "$LOG_FILE"
+        EXIT_CODE=${PIPESTATUS[0]}
+        ;;
+    "gsum-save")
+        log "Executing: smart-gsum --save $*"
+        smart-gsum --save "$@" 2>&1 | tee -a "$LOG_FILE"
+        EXIT_CODE=${PIPESTATUS[0]}
+        ;;
+    "gsum-plan")
+        log "Executing: smart-gsum --plan $*"
+        smart-gsum --plan "$@" 2>&1 | tee -a "$LOG_FILE"
+        EXIT_CODE=${PIPESTATUS[0]}
+        ;;
+    *)
+        log "ERROR: Unknown command: $COMMAND"
+        echo "ERROR: Unknown gsum command: $COMMAND" >&2
+        EXIT_CODE=1
+        ;;
+esac
+
+# Log results
+log ""
+log "=== COMMAND COMPLETED ==="
+log "Exit code: $EXIT_CODE"
+log "Files created/modified:"
+find . -name "*.gsum.md" -o -name ".gsum" -o -name "*SUMMARY*.md" | head -20 | while read -r f; do
+    log "  - $f ($(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$f" 2>/dev/null || echo 'unknown time'))"
+done
+
+# Create a marker file that Claude can check
+echo "$LOG_FILE" > "$DEBUG_DIR/latest.log"
+
+log "=== GSUM DEBUG SESSION END ==="
+log ""
+
+# Also output the log location for Claude to see
+echo "📝 Debug log saved to: $LOG_FILE"
+echo "   View with: cat $LOG_FILE"
+
+exit $EXIT_CODE
