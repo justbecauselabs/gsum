@@ -4,6 +4,225 @@
 
 DIR="${1:-.}"
 
+# Function to generate a comprehensive Claude prompt when Gemini quota is exceeded
+generate_claude_fallback_prompt() {
+    local target_dir="."
+    local max_lines_per_file=100
+    
+    echo "═══════════════════════════════════════════════════════════════════"
+    echo "CLAUDE CODE FALLBACK PROMPT"
+    echo "═══════════════════════════════════════════════════════════════════"
+    echo ""
+    echo "📋 Instructions:"
+    echo "1. Copy everything below the dashed line"
+    echo "2. Open a new Claude Code session (claude.ai/code)"
+    echo "3. Paste the entire prompt"
+    echo "4. Claude will analyze your codebase and create the summary"
+    echo ""
+    echo "-------------------------------------------------------------------"
+    echo ""
+    echo "Please analyze the following codebase and create a comprehensive ARCHITECTURE & TECHNICAL SPECIFICATION document. This should be structured exactly like the prompt below requests."
+    echo ""
+    echo "## DIRECTORY STRUCTURE"
+    echo '```'
+    
+    # Generate directory tree (limit depth to avoid huge outputs)
+    if command -v tree >/dev/null 2>&1; then
+        tree -L 4 -I 'node_modules|.git|dist|build|coverage|.next|.cache|*.log|tmp|temp|.env*|vendor|__pycache__|venv|.venv' "$target_dir" 2>/dev/null || find "$target_dir" -type f -name "*.md" -o -name "*.json" -o -name "*.js" -o -name "*.ts" -o -name "*.py" -o -name "*.go" -o -name "*.rs" | grep -v node_modules | sort
+    else
+        find "$target_dir" -type f -name "*.md" -o -name "*.json" -o -name "*.js" -o -name "*.ts" -o -name "*.py" -o -name "*.go" -o -name "*.rs" | grep -v node_modules | head -50 | sort
+    fi
+    
+    echo '```'
+    echo ""
+    echo "## KEY FILES CONTENT"
+    echo ""
+    
+    # Include README if exists
+    for readme in README.md readme.md README.MD README Readme.md; do
+        if [ -f "$target_dir/$readme" ]; then
+            echo "### $readme"
+            echo '```markdown'
+            head -$max_lines_per_file "$target_dir/$readme" 2>/dev/null
+            local total_lines=$(wc -l < "$target_dir/$readme" 2>/dev/null || echo 0)
+            if [ "$total_lines" -gt "$max_lines_per_file" ]; then
+                echo "... (truncated, $((total_lines - max_lines_per_file)) more lines)"
+            fi
+            echo '```'
+            echo ""
+            break
+        fi
+    done
+    
+    # Include package.json if exists
+    if [ -f "$target_dir/package.json" ]; then
+        echo "### package.json"
+        echo '```json'
+        cat "$target_dir/package.json" 2>/dev/null | head -$max_lines_per_file
+        echo '```'
+        echo ""
+    fi
+    
+    # Include main configuration files
+    for config in .gitignore Dockerfile docker-compose.yml Makefile tsconfig.json webpack.config.js vite.config.js next.config.js; do
+        if [ -f "$target_dir/$config" ]; then
+            echo "### $config"
+            echo '```'
+            head -30 "$target_dir/$config" 2>/dev/null
+            echo '```'
+            echo ""
+        fi
+    done
+    
+    # Sample source files
+    echo "### Sample Source Files"
+    echo ""
+    
+    # Find and show a few key source files
+    local file_count=0
+    for pattern in "index.js" "main.js" "app.js" "index.ts" "main.ts" "app.ts" "main.py" "app.py" "__init__.py" "main.go" "lib.rs" "main.rs"; do
+        while IFS= read -r file; do
+            if [ $file_count -lt 3 ]; then
+                echo "#### $file"
+                echo '```'
+                head -50 "$file" 2>/dev/null
+                local total_lines=$(wc -l < "$file" 2>/dev/null || echo 0)
+                if [ "$total_lines" -gt 50 ]; then
+                    echo "... (truncated, $((total_lines - 50)) more lines)"
+                fi
+                echo '```'
+                echo ""
+                ((file_count++))
+            fi
+        done < <(find "$target_dir" -name "$pattern" -type f 2>/dev/null | grep -v node_modules | head -1)
+    done
+    
+    echo ""
+    echo "## TASK"
+    echo ""
+    echo "Based on the codebase structure and files shown above, please create a comprehensive ARCHITECTURE & TECHNICAL SPECIFICATION document that includes:"
+    echo ""
+    cat << 'CLAUDE_PROMPT_EOF'
+# PROJECT OVERVIEW
+- Project name and purpose
+- What problem it solves
+- Target users/audience
+- Current development status
+- Key features and capabilities
+
+# SETUP & GETTING STARTED
+- Prerequisites (Node version, dependencies, etc.)
+- Installation steps
+- Environment variables needed
+- How to run in development
+- How to build for production
+- Common troubleshooting
+
+# ARCHITECTURE OVERVIEW
+- High-level architecture (frontend/backend/database)
+- Technology choices and why
+- Design patterns used
+- Data flow overview
+- State management approach
+- Authentication/authorization architecture
+
+# PROJECT STRUCTURE
+Explain the directory organization and purpose of each major directory.
+
+# KEY MODULES & COMPONENTS
+For each major module/directory:
+- Purpose and responsibility
+- Key files and their roles
+- Interfaces/APIs it exposes
+- Dependencies and interactions
+- Code patterns used
+
+# DATABASE & DATA MODELS
+- Database schema overview
+- Key tables/collections and relationships
+- Migration approach
+- Data access patterns
+
+# API DESIGN
+- API structure (REST/GraphQL/tRPC)
+- Authentication approach
+- Endpoint naming conventions
+- Request/response formats
+- Error handling patterns
+
+# FRONTEND ARCHITECTURE
+- Component hierarchy
+- Routing structure
+- State management details
+- Data fetching patterns
+- UI component library
+- Styling approach
+
+# BUSINESS LOGIC
+- Where business rules live
+- How features are implemented
+- Service layer patterns
+- Data validation approach
+- Error handling strategy
+
+# TESTING STRATEGY
+- Test file locations
+- Testing frameworks used
+- What to test and how
+- Running tests
+
+# DEPLOYMENT & CONFIGURATION
+- Build process
+- Deployment targets
+- Environment-specific configs
+- CI/CD pipeline
+
+# DEVELOPMENT WORKFLOW
+- Git branch strategy
+- Code review process
+- Coding standards
+- Important scripts
+- Debugging tips
+
+# SECURITY CONSIDERATIONS
+- Authentication implementation
+- Authorization checks
+- Data validation
+- API security
+- Secrets management
+
+# PERFORMANCE OPTIMIZATIONS
+- Caching strategies
+- Database query optimization
+- Frontend optimizations
+- Bundle size management
+
+# IMPORTANT PATTERNS & CONVENTIONS
+- Naming conventions
+- File organization rules
+- Code style guidelines
+- Common utilities to use
+- Patterns to follow/avoid
+
+# CURRENT LIMITATIONS & TECH DEBT
+- Known issues
+- Areas needing refactoring
+- Performance bottlenecks
+- Missing features
+
+# ADDING NEW FEATURES
+Step-by-step guide for common development tasks.
+
+Please make this document comprehensive (aim for 10,000+ words), include specific code examples from the project, and be as detailed as possible. Format it as markdown.
+CLAUDE_PROMPT_EOF
+    
+    echo ""
+    echo "-------------------------------------------------------------------"
+    echo ""
+    echo "✅ Prompt generated! Copy everything above and paste into Claude Code."
+    echo ""
+}
+
 # Change to target directory so Gemini analyzes the right location
 cd "$DIR" || exit 1
 
@@ -215,7 +434,28 @@ if [ -n "$ERROR_CONTENT" ]; then
         echo "• You've hit the daily request limit for Gemini 2.5 Pro"
         echo "• The quota typically resets at midnight Pacific Time"
         echo ""
-        echo "Solutions:"
+        
+        # Offer Claude Code as fallback
+        echo "🤖 Would you like to use Claude Code as a fallback? (y/n)"
+        echo "   Claude can analyze your codebase without using Gemini's API quota."
+        echo ""
+        
+        # Check if we're in an interactive terminal
+        if [ -t 0 ]; then
+            read -r -p "Proceed with Claude Code? [y/N] " response
+            if [[ "$response" =~ ^[Yy]$ ]]; then
+                echo ""
+                echo "🚀 Generating Claude Code prompt..."
+                echo ""
+                
+                # Generate comprehensive context for Claude
+                generate_claude_fallback_prompt
+                exit 0
+            fi
+        fi
+        
+        echo ""
+        echo "Other solutions:"
         echo "1. Wait until tomorrow for quota reset"
         echo "2. Check your Google Cloud Console for quota status:"
         echo "   https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com"
@@ -233,6 +473,21 @@ if [ -n "$ERROR_CONTENT" ]; then
         echo "1. Ensure you have a valid API key configured"
         echo "2. Check that the Gemini CLI is properly installed"
         echo "3. Verify your API key has the necessary permissions"
+        echo ""
+        
+        # Offer Claude Code as fallback for auth errors too
+        if [ -t 0 ]; then
+            echo "🤖 Would you like to use Claude Code instead? (y/n)"
+            read -r -p "Proceed with Claude Code? [y/N] " response
+            if [[ "$response" =~ ^[Yy]$ ]]; then
+                echo ""
+                echo "🚀 Generating Claude Code prompt..."
+                echo ""
+                generate_claude_fallback_prompt
+                exit 0
+            fi
+        fi
+        
         echo ""
         echo "For setup instructions, see:"
         echo "https://github.com/google/generative-ai-docs/tree/main/gemini-cli"
