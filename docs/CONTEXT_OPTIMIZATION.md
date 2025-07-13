@@ -19,6 +19,9 @@ Add context level options: `--context-level <minimal|standard|comprehensive>`
 
 **Benefit**: Users can choose based on their context window budget
 
+JHNOTE: make default "standard" & make the default for save command comprehensive
+
+
 ### 2. **Focus Areas** 🔍
 Add `--focus <area>` to generate targeted summaries:
 ```bash
@@ -39,6 +42,9 @@ gsum context --show       # Shows accumulated context
 gsum context --clear      # Resets context
 ```
 
+JHNOTE: why clear? does it clear any context for claude? 
+JHNOTE: doesnt this already work? gsum should take a path - explain this in more depth
+
 **Benefit**: Build up only the context you need progressively
 
 ### 4. **Diff-Based Summaries** 🔄
@@ -49,6 +55,8 @@ gsum diff --since abc123  # Changes since specific commit
 ```
 
 **Benefit**: Minimal tokens for updates, not full regeneration
+
+JHNOTE: WHat would the basic diff command compare against? it would require a gsum save command to be run right?
 
 ### 5. **Smart File Inclusion** 📄
 Automatically include most relevant files based on:
@@ -61,6 +69,8 @@ Config option: `--smart-files 10` (include top 10 most relevant files)
 
 **Benefit**: AI-determined relevance = better context
 
+JHNOTE: This would be particularly important for gsum task!!!
+
 ### 6. **Token Budget Mode** 💰
 Specify exact token budget:
 ```bash
@@ -70,6 +80,8 @@ gsum --estimate           # Shows token count without generating
 
 **Benefit**: Precise control over context window usage
 
+JHNOTE: Dont worry about this. kill this suggestion
+
 ### 7. **Interactive Mode** 🎮
 ```bash
 gsum interactive
@@ -78,6 +90,9 @@ gsum interactive
 > Focus on recent changes? [Y/n]
 > Max depth for components? [3]
 ```
+
+JHNOTE - love this suggestion
+
 
 **Benefit**: Customize exactly what goes into the summary
 
@@ -102,6 +117,8 @@ gsum --for "adding user authentication"
 # Focuses on: auth flows, user models, session handling, middleware
 ```
 
+JHNOTE: How is this different from gsum task? if theres not a core difference discard, if there is explain it.
+
 **Benefit**: Context tailored to the task at hand
 
 ### 10. **Summary Caching & Composition** 🧩
@@ -113,6 +130,8 @@ gsum compose auth-flow      # Combines relevant cached summaries
 ```
 
 **Benefit**: Reusable components = less regeneration
+
+JHNOTE: This feels like overkill for now. Add this as a future implementation to the readme, we need to be very thoughtful about this.
 
 ## Recommended Priority
 
