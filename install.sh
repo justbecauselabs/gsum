@@ -168,6 +168,19 @@ printf "  ${GREEN}✓${NC} Created gsum executable\n"
 echo "  Testing installation..."
 if "$HOME/bin/gsum" version > /dev/null 2>&1; then
     printf "  ${GREEN}✓${NC} gsum CLI is working\n"
+    
+    # Additional verification
+    echo "  Verifying installation path..."
+    GSUM_PATH=$(which gsum 2>/dev/null || echo "")
+    if [ -n "$GSUM_PATH" ]; then
+        printf "  ${GREEN}✓${NC} gsum found at: $GSUM_PATH\n"
+    else
+        printf "  ${YELLOW}⚠️${NC} gsum not in PATH yet (will be after shell reload)\n"
+    fi
+    
+    # Show version
+    GSUM_VERSION=$("$HOME/bin/gsum" --version 2>/dev/null || echo "unknown")
+    printf "  ${GREEN}✓${NC} Version: $GSUM_VERSION\n"
 else
     printf "${RED}✗ gsum CLI test failed${NC}\n"
     echo "   Please check the installation"

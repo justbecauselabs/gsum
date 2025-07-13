@@ -3,6 +3,7 @@ const path = require('path');
 const { ProjectAnalyzer } = require('./analyzer');
 const { GitIntegration } = require('./git');
 const { GeminiClient } = require('./gemini');
+const { ClaudeClient } = require('./claude');
 const { generateFallbackPrompt } = require('./fallback');
 
 class SummaryGenerator {
@@ -10,6 +11,7 @@ class SummaryGenerator {
     this.options = options;
     this.analyzer = new ProjectAnalyzer(options);
     this.gemini = new GeminiClient();
+    this.claude = new ClaudeClient();
   }
 
   async generate(targetDir, options = {}) {
@@ -43,13 +45,27 @@ class SummaryGenerator {
       if (error.message.includes('quota exceeded')) {
         // Offer Claude fallback
         console.error('❌ ERROR: Gemini API quota exceeded');
-        console.error('\nWould you like to use Claude Code as a fallback?');
-        console.error('Run: gsum --fallback\n');
         
         if (options.fallback) {
+          console.error('\nGenerating Claude fallback prompt...\n');
           const fallbackPrompt = generateFallbackPrompt(projectInfo);
           console.log(fallbackPrompt);
           return null;
+        } else if (options.claudeExecute && this.claude.checkClaudeInstalled()) {
+          console.error('\nAttempting to use Claude CLI directly...\n');
+          try {
+            const claudePrompt = this.buildPrompt(projectInfo, mode);
+            summary = await this.claude.executeWithClaude(claudePrompt, targetDir);
+          } catch (claudeError) {
+            console.error('Claude execution failed:', claudeError.message);
+            console.error('\nUse --fallback to generate a prompt instead.\n');
+            throw error;
+          }
+        } else {
+          console.error('\nOptions:');
+          console.error('1. Run: gsum --fallback (generates prompt to copy)');
+          console.error('2. Run: gsum --claude-execute (tries Claude CLI directly)');
+          console.error('3. Wait for Gemini quota reset\n');
         }
         
         throw error;
@@ -175,11 +191,11 @@ External services, APIs, and third-party integrations.
 # ADDING NEW FEATURES
 Step-by-step guide for common development tasks and feature additions.
 
-Now use the summarize_directory tool to create this architecture-focused technical specification. Make sure to:
-1. Set the outputFile parameter to "DIRECTORY_SUMMARY.md" (not ARCHITECTURE.md)
-2. Create an EXTREMELY detailed document - aim for 10,000+ words
-3. Include actual code examples from the project
-4. Be exhaustive in documenting every aspect
+Based on the project information above, create this architecture-focused technical specification. Make sure to:
+1. Create an EXTREMELY detailed document - aim for 10,000+ words
+2. Include actual code examples from the project where relevant
+3. Be exhaustive in documenting every aspect
+4. Provide accurate, fact-checked information
 
 REMEMBER: This is meant to be the DEFINITIVE guide to understanding and working with this codebase. Don't hold back on details!`;
   }
@@ -198,13 +214,19 @@ Task: ${task}
 
 Based on the codebase analysis, create a detailed implementation plan that includes:
 1. Overview of the approach
-2. Step-by-step implementation guide
-3. Files that need to be modified or created
+2. Step-by-step implementation guide with clear, actionable tasks
+3. Files that need to be modified or created (with exact paths)
 4. Code examples for key changes
-5. Testing approach
+5. Testing approach and test cases
 6. Potential challenges and solutions
+7. Verification steps to ensure correctness
 
-Be specific and provide actionable steps.`;
+IMPORTANT: 
+- Make the plan clear, thoughtful, and fact-checked
+- Each step should be actionable and verifiable
+- Include specific commands, file paths, and code snippets
+- Consider edge cases and error handling
+- Ensure the plan is complete and can be followed step-by-step`;
   }
 }
 

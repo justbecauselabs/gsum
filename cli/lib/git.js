@@ -73,17 +73,18 @@ class GitIntegration {
     
     try {
       const content = await fs.readFile(summaryFile, 'utf8');
+      const branch = this.getBranchName() || 'unknown';
       
       // Remove existing hash if present
       const updatedContent = content.replace(GIT_HASH_PATTERN, '').trimEnd();
       
-      // Add new hash
-      const finalContent = `${updatedContent}\n\n<!-- git-hash: ${hash} -->`;
+      // Add new hash with branch info at the bottom
+      const finalContent = `${updatedContent}\n\n<!-- git-hash: ${hash} -->\n<!-- git-branch: ${branch} -->`;
       
       await fs.writeFile(summaryFile, finalContent);
       
       if (global.verbose) {
-        global.log(`Added git hash to ${summaryFile}`, 'verbose');
+        global.log(`Added git hash and branch to ${summaryFile}`, 'verbose');
       }
     } catch (error) {
       if (global.debug) {

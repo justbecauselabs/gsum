@@ -62,6 +62,7 @@ install-commands:
 	@echo 'esac' >> ~/bin/claude-gsum-wrapper
 	@chmod +x ~/bin/claude-gsum-wrapper
 	
+	# Note: Always overwrite existing commands to ensure they're up-to-date
 	# Create /gsum command
 	@echo '---' > ~/.claude/commands/gsum.md
 	@echo 'description: Generates a fresh, detailed summary of the current project for ephemeral context.' >> ~/.claude/commands/gsum.md

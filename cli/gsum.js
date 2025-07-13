@@ -10,6 +10,7 @@ const { runDefaultSummary } = require('./lib/commands/summary');
 const { runSaveSummary } = require('./lib/commands/save');
 const { runPlan } = require('./lib/commands/plan');
 const { runUpdate } = require('./lib/commands/update');
+const { runLLMUsage } = require('./lib/commands/llm-usage');
 
 // Global state for verbose/debug
 global.verbose = false;
@@ -60,6 +61,8 @@ program
   .option('--include <patterns>', 'include file patterns (comma-separated)')
   .option('--exclude <patterns>', 'exclude file patterns (comma-separated)')
   .option('--no-git', 'disable git integration')
+  .option('--fallback', 'generate Claude fallback prompt on Gemini quota error')
+  .option('--claude-execute', 'try to execute with Claude CLI on Gemini quota error')
   .action(async (options) => {
     try {
       await runDefaultSummary(options);
@@ -139,6 +142,22 @@ program
     console.log(`Node.js ${process.version}`);
     console.log(`Platform: ${process.platform} ${process.arch}`);
     console.log(`Installation: ${__dirname}`);
+  });
+
+// LLM usage guide
+program
+  .command('llm-usage')
+  .description('Show usage guide for LLMs')
+  .action(async () => {
+    try {
+      await runLLMUsage();
+    } catch (error) {
+      log(error.message, 'error');
+      if (global.debug) {
+        console.error(error.stack);
+      }
+      process.exit(1);
+    }
   });
 
 // Parse arguments

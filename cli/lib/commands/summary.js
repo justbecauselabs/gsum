@@ -18,7 +18,7 @@ async function runDefaultSummary(options) {
     // Result is already printed by generator
     return result;
   } catch (error) {
-    if (error.message === 'quota exceeded' && !options.fallback) {
+    if (error.message === 'quota exceeded' && !options.fallback && !options.claudeExecute) {
       // Error message already shown by generator
       process.exit(1);
     }
