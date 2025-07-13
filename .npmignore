@@ -1,0 +1,35 @@
+# npm ignore file for gsum-cli
+
+# Development files
+.git/
+.github/
+test.sh
+test-dir/
+Makefile
+install.sh
+
+# MCP server (not part of npm package)  
+mcp-server/
+
+# Node modules (will be installed by npm)
+node_modules/
+
+# Lock files (use package.json only)
+package-lock.json
+
+# Development docs
+docs/TROUBLESHOOTING.md
+
+# CI/Build artifacts
+.DS_Store
+*.log
+.env*
+
+# Keep what's needed for npm package:
+# - bin/
+# - lib/ 
+# - cli/ (for actual functionality)
+# - README.md
+# - CHANGELOG.md
+# - LICENSE
+# - package.json

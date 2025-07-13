@@ -1,0 +1,71 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Install CLI dependencies
+      run: |
+        cd cli
+        npm ci
+        
+    - name: Install root dependencies
+      run: npm install
+      
+    - name: Run tests
+      run: |
+        make install
+        ./test.sh
+        
+    - name: Check package
+      run: |
+        npm pack --dry-run
+        
+    - name: Publish to npm
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## gsum-cli ${{ github.ref }}
+          
+          ### 📦 npm Installation
+          ```bash
+          npm install -g gsum-cli
+          # or
+          npx gsum-cli
+          ```
+          
+          ### 🔧 Git Installation
+          ```bash
+          git clone https://github.com/jhurray/gsum.git
+          cd gsum && make install
+          ```
+          
+          ### ✨ New in this release
+          See [CHANGELOG.md](https://github.com/jhurray/gsum/blob/main/CHANGELOG.md) for full details.
+          
+        draft: false
+        prerelease: false

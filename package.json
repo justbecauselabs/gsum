@@ -1,0 +1,62 @@
+{
+  "name": "gsum-cli",
+  "version": "1.0.0",
+  "description": "AI-powered codebase summarization CLI with smart context optimization",
+  "main": "lib/index.js",
+  "bin": {
+    "gsum": "./bin/gsum.js"
+  },
+  "scripts": {
+    "test": "./test.sh",
+    "prepublishOnly": "npm test"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "cli/",
+    "scripts/",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "cli",
+    "ai",
+    "codebase",
+    "summary",
+    "analysis",
+    "gemini",
+    "claude",
+    "developer-tools",
+    "smart-context",
+    "focus-areas",
+    "interactive",
+    "fingerprint",
+    "code-analysis",
+    "documentation",
+    "architecture"
+  ],
+  "dependencies": {
+    "commander": "^11.1.0",
+    "glob": "^10.3.10",
+    "micromatch": "^4.0.5"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhurray/gsum.git"
+  },
+  "homepage": "https://github.com/jhurray/gsum#readme",
+  "bugs": {
+    "url": "https://github.com/jhurray/gsum/issues"
+  },
+  "author": "jhurray",
+  "license": "MIT",
+  "directories": {
+    "lib": "lib",
+    "bin": "bin",
+    "doc": "docs"
+  }
+}
