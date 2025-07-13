@@ -134,27 +134,13 @@ run_gsummarize_wrapper() {
         return $exit_code
     fi
     
-    # Check if ARCHITECTURE.md was created (preferred comprehensive content)
-    if [ -f "ARCHITECTURE.md" ]; then
-        # Success - use the comprehensive architecture content
-        if [ "$output_mode" = "stdout" ]; then
-            cat "ARCHITECTURE.md"
-        else
-            # For file mode, output the comprehensive content
-            cat "ARCHITECTURE.md"
-        fi
-        cd "$current_dir"
-        rm -f "$temp_file" "$temp_error"
-        return 0
-    fi
-    
-    # Fallback: Check if DIRECTORY_SUMMARY.md was created (basic summary)
+    # Check if DIRECTORY_SUMMARY.md was created (normal case)
     if [ -f "DIRECTORY_SUMMARY.md" ]; then
-        # Use basic directory summary as fallback
+        # Success - output the content based on mode
         if [ "$output_mode" = "stdout" ]; then
             cat "DIRECTORY_SUMMARY.md"
         else
-            # For file mode, output the basic summary
+            # For file mode, just output the content without removing the file
             cat "DIRECTORY_SUMMARY.md"
         fi
         cd "$current_dir"
