@@ -2,15 +2,27 @@
 
 gsum is a powerful command-line tool that generates intelligent, context-aware summaries of codebases using AI. It helps developers quickly understand project structure, architecture, and implementation details.
 
+## Why gsum?
+
+Modern codebases are complex. Whether you're:
+- 🆕 Onboarding to a new project
+- 🤖 Providing context to AI assistants
+- 📚 Documenting your architecture
+- 🔍 Planning new features
+- 🔄 Reviewing code changes
+
+gsum analyzes your entire codebase and generates comprehensive, AI-powered documentation in seconds.
+
 ## Features
 
 - 🚀 **Ephemeral Summaries**: Generate fresh summaries on-demand for maximum context
 - 💾 **Persistent Summaries**: Save summaries with intelligent git-aware regeneration
-- 📋 **Implementation Planning**: Create detailed plans for new features based on codebase analysis
+- 📋 **Implementation Planning**: Create detailed, actionable plans for new features
 - 🔄 **Self-Updating**: Built-in update mechanism to stay current
 - 🧠 **Smart Analysis**: Detects tech stack, architecture patterns, and project structure
 - 🔍 **Git-Aware**: Only regenerates when significant changes occur (>500 lines)
-- 🎯 **AI-Powered**: Uses Gemini API with Claude fallback for robust summarization
+- 🎯 **AI-Powered**: Uses Gemini API with Claude fallback options
+- 🛡️ **Standalone**: No external dependencies or MCP servers required
 
 ## Installation
 
@@ -19,7 +31,7 @@ gsum is a powerful command-line tool that generates intelligent, context-aware s
 - Node.js v16 or higher
 - npm
 - Git
-- Gemini CLI (recommended)
+- Gemini CLI (recommended) - for AI generation
 
 ### Quick Install
 
@@ -29,9 +41,16 @@ cd gsum
 make install
 ```
 
+The installer will:
+- ✅ Check prerequisites
+- ✅ Install dependencies
+- ✅ Create the gsum executable
+- ✅ Verify installation with `which gsum`
+- ✅ Display the installed version
+
 ### Optional: Install Claude Commands
 
-If you use Claude Desktop, you can install slash commands:
+If you use Claude Desktop, install slash commands for seamless integration:
 
 ```bash
 make install-commands
@@ -40,7 +59,32 @@ make install-commands
 This enables:
 - `/gsum` - Generate ephemeral summary
 - `/gsum-save` - Create/update persistent summary
-- `/gsum-plan` - Generate implementation plans
+- `/gsum-plan <task>` - Generate implementation plans
+
+**Note**: Commands are always overwritten on install/update to ensure you have the latest version.
+
+## How It Works
+
+### 1. Analysis Phase (Local)
+gsum analyzes your codebase locally:
+- 📁 Traverses directory structure (respects .gitignore patterns)
+- 🔍 Detects programming languages and frameworks
+- 📊 Counts files and analyzes imports/exports
+- 🏗️ Identifies architecture patterns
+- 📦 Extracts package.json, go.mod, requirements.txt, etc.
+- 🌿 Captures git information (branch, last commit)
+
+### 2. Generation Phase (AI-Powered)
+gsum creates a detailed prompt and sends it to Gemini:
+- 📝 Builds comprehensive prompt with project context
+- 🤖 Gemini analyzes and generates documentation
+- 📄 Returns ~10,000 word architectural guide
+
+### 3. Output Phase
+Depending on the command:
+- **Default**: Prints to terminal (ephemeral)
+- **Save**: Writes to file with git metadata
+- **Plan**: Outputs actionable implementation steps
 
 ## Usage
 
@@ -56,39 +100,45 @@ gsum save
 # Generate implementation plan
 gsum plan "add user authentication"
 
-# Update gsum to latest version
+# Update gsum to latest version (from anywhere)
 gsum update
 
-# Show help
+# Show usage guide for LLMs
+gsum llm-usage
+
+# Show detailed help
 gsum --help
 ```
 
-### Options
+### Key Options
 
 ```bash
-# Enable verbose output
+# Verbose output (see what gsum is doing)
 gsum -v
 
-# Enable debug mode
+# Debug mode (detailed logs)
 gsum -d
-
-# Specify output format
-gsum --format json
 
 # Force regeneration (ignore git checks)
 gsum save --force
 
 # Custom output file
-gsum save --file MY_SUMMARY.md
+gsum save --file MY_DOCS.md
+
+# Generate fallback prompt on quota error
+gsum --fallback
+
+# Try Claude CLI on quota error (experimental)
+gsum --claude-execute
 ```
 
-### Advanced Usage
+### Advanced Options
 
 ```bash
-# Limit directory traversal depth
+# Limit directory depth
 gsum --depth 5
 
-# Include specific file patterns
+# Include only specific files
 gsum --include "*.js,*.ts"
 
 # Exclude patterns
@@ -96,75 +146,154 @@ gsum --exclude "test/**,*.spec.js"
 
 # Disable git integration
 gsum --no-git
+
+# Output as JSON
+gsum --format json
 ```
 
-## How It Works
+## Git-Aware Intelligence
 
-1. **Analysis**: gsum analyzes your codebase structure, file types, imports/exports
-2. **Tech Stack Detection**: Automatically identifies frameworks, libraries, and tools
-3. **AI Generation**: Uses Gemini API to create comprehensive documentation
-4. **Git Integration**: Tracks changes to avoid unnecessary regeneration
-5. **Smart Caching**: Caches analysis results for improved performance
+gsum save is smart about regeneration:
+
+1. **First Run**: Generates and saves with git metadata
+2. **Subsequent Runs**: 
+   - Checks current git hash vs stored hash
+   - Counts lines changed with `git diff`
+   - Only regenerates if >500 lines changed
+   - Use `--force` to override
+
+Saved files include:
+```markdown
+[Your documentation content]
+
+<!-- git-hash: abc123def456 -->
+<!-- git-branch: main -->
+```
+
+## Handling Quota Limits
+
+When Gemini quota is exceeded, gsum provides options:
+
+1. **Generate Fallback Prompt** (`--fallback`)
+   ```bash
+   gsum --fallback
+   ```
+   Creates a detailed prompt you can copy to Claude
+
+2. **Try Claude CLI** (`--claude-execute`)
+   ```bash
+   gsum --claude-execute
+   ```
+   Experimental: Attempts to run with Claude CLI directly
+
+3. **Wait for Reset**
+   Gemini quotas typically reset daily
 
 ## Architecture
 
-gsum is built as a modular Node.js CLI application:
+gsum is a modular Node.js CLI application:
 
 ```
-cli/
-├── gsum.js              # Main CLI entry point
-├── lib/
-│   ├── analyzer.js      # Codebase analysis engine
-│   ├── generator.js     # Summary generation orchestrator
-│   ├── git.js          # Git integration and change tracking
-│   ├── gemini.js       # Gemini API client
-│   ├── fallback.js     # Claude fallback prompt generator
-│   └── commands/       # Command implementations
-└── package.json
+gsum/
+├── cli/
+│   ├── gsum.js              # Main CLI entry point
+│   ├── lib/
+│   │   ├── analyzer.js      # Codebase analysis engine
+│   │   ├── generator.js     # Summary generation orchestrator
+│   │   ├── git.js          # Git integration and change tracking
+│   │   ├── gemini.js       # Gemini API client
+│   │   ├── claude.js       # Claude CLI client (experimental)
+│   │   ├── fallback.js     # Fallback prompt generator
+│   │   └── commands/       # Command implementations
+│   └── package.json        # Dependencies
+├── install.sh              # Smart installer script
+├── test.sh                # Test suite
+└── Makefile               # Build automation
 ```
 
-## Configuration
+### Key Design Decisions
 
-### Gemini API
+- **Standalone CLI**: No MCP server dependencies
+- **Local Analysis**: All file analysis happens locally
+- **AI Generation**: Leverages Gemini's capabilities
+- **Git Integration**: Smart caching and regeneration
+- **Extensible**: Easy to add new commands
 
-gsum requires Gemini CLI to be installed and configured. If you don't have it:
+## Examples
 
-1. Install Gemini CLI
-2. Configure API credentials
-3. gsum will automatically use it
-
-### Environment Variables
-
-- `GEMINI_API_KEY` - Your Gemini API key (if not using Gemini CLI)
-- `GSUM_DEBUG` - Enable debug logging
-
-## Development
-
-### Running Tests
-
+### For a React Project
 ```bash
-make test
+$ gsum
+# Outputs comprehensive guide including:
+# - Component architecture
+# - State management approach
+# - Routing structure
+# - Build configuration
+# - Testing setup
 ```
 
-### Building Locally
-
+### For a Go Microservice
 ```bash
-cd cli
-npm install
-node gsum.js --version
+$ gsum save
+# Creates ARCHITECTURE.gsum.md with:
+# - Service architecture
+# - API endpoints
+# - Database models
+# - Dependency injection
+# - Deployment configuration
 ```
 
-### Contributing
+### Planning a Feature
+```bash
+$ gsum plan "add real-time notifications"
+# Generates step-by-step plan:
+# 1. WebSocket server setup
+# 2. Frontend integration points
+# 3. Database schema changes
+# 4. API modifications
+# 5. Testing approach
+```
+
+## Integration with AI Tools
+
+### Claude Desktop
+After running `make install-commands`:
+- Type `/gsum` in any conversation
+- Claude runs gsum on your current directory
+- Full analysis appears in chat
+
+### Other LLMs
+Use `gsum llm-usage` to see integration guide:
+```bash
+$ gsum llm-usage
+# Shows examples and best practices for LLMs
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**gsum: command not found**
+- Run `source ~/.bashrc` (or `~/.zshrc`)
+- Check `echo $PATH` includes `~/bin`
+
+**Gemini quota exceeded**
+- Use `gsum --fallback` for Claude prompt
+- Or wait for daily reset
+
+**Summary not updating**
+- Check git status: `git status`
+- Use `gsum save --force` to force update
+
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions.
+
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run tests
+4. Run tests: `make test`
 5. Submit a pull request
-
-## Troubleshooting
-
-See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues and solutions.
 
 ## License
 
@@ -178,9 +307,13 @@ Created by [jhurray](https://github.com/jhurray)
 
 ### v2.0.0
 - Complete refactor into standalone CLI tool
-- Removed MCP server dependency
-- Added modular command structure
-- Improved error handling and user experience
+- No MCP dependencies - fully self-contained
+- Git branch tracking in saved files
+- LLM usage guide command
+- Improved error handling with fallback options
+- Installation verification steps
+- Always-fresh Claude commands
+- Self-updating via `gsum update` command
 
 ### v1.x
 - Initial release with MCP server
