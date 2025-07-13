@@ -305,16 +305,12 @@ Created by [jhurray](https://github.com/jhurray)
 
 ## Changelog
 
-### v2.0.0
-- Complete refactor into standalone CLI tool
-- No MCP dependencies - fully self-contained
-- Git branch tracking in saved files
-- LLM usage guide command
-- Improved error handling with fallback options
-- Installation verification steps
-- Always-fresh Claude commands
-- Self-updating via `gsum update` command
-
-### v1.x
-- Initial release with MCP server
-- Basic summarization capabilities
+### v1.0.0 (Prerelease)
+- Initial release as standalone CLI tool
+- AI-powered codebase analysis and documentation
+- Git-aware intelligent regeneration
+- Support for ephemeral and persistent summaries
+- Implementation planning features
+- Gemini API integration with Claude fallback
+- Self-updating capabilities
+- Claude Desktop slash commands
