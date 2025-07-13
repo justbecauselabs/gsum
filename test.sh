@@ -165,6 +165,8 @@ echo
 
 # Initialize git for git-related tests
 git init > /dev/null 2>&1
+git config user.email "test@example.com" > /dev/null 2>&1
+git config user.name "Test User" > /dev/null 2>&1
 git add . > /dev/null 2>&1
 git commit -m "Initial commit" > /dev/null 2>&1
 
