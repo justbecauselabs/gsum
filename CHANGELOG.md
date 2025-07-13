@@ -46,10 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Installation
 ```bash
 # Global installation
-npm install -g gsum-cli
+npm install -g gsum
 
 # One-time usage
-npx gsum-cli
+npx gsum
 
 # Development installation
 git clone https://github.com/jhurray/gsum.git

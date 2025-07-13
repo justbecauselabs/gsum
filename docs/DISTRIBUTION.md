@@ -29,14 +29,14 @@ This document outlines the distribution strategy for gsum CLI, analyzing the cur
 ### Target User Experience:
 ```bash
 # One-time usage
-npx gsum-cli
+npx gsum
 
 # Global installation
-npm install -g gsum-cli
+npm install -g gsum
 gsum --help
 
 # Local project installation
-npm install --save-dev gsum-cli
+npm install --save-dev gsum
 npx gsum --help
 ```
 
@@ -57,7 +57,7 @@ npx gsum --help
 2. **Package.json Updates**:
    ```json
    {
-     "name": "gsum-cli",
+     "name": "gsum",
      "version": "1.0.0",
      "description": "AI-powered codebase summarization CLI with smart context optimization",
      "main": "lib/index.js",
@@ -228,10 +228,10 @@ jobs:
 ### For End Users:
 ```bash
 # Quick try
-npx gsum-cli
+npx gsum
 
 # Install globally
-npm install -g gsum-cli
+npm install -g gsum
 ```
 
 ### For Developers/Contributors:
@@ -245,7 +245,7 @@ make install
 ### For Organizations:
 ```bash
 # Add to project
-npm install --save-dev gsum-cli
+npm install --save-dev gsum
 
 # In package.json scripts
 {
@@ -266,7 +266,7 @@ npm install --save-dev gsum-cli
 - [ ] Test local npm pack/install
 
 ### Phase 2: Publishing Setup
-- [ ] Register npm package name "gsum-cli"
+- [ ] Register npm package name "gsum"
 - [ ] Set up npm publishing workflow
 - [ ] Create changelog automation
 - [ ] Test publishing to npm (dry run)

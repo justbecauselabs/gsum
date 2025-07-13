@@ -1,8 +1,8 @@
-# npm Publishing Guide for gsum-cli
+# npm Publishing Guide for gsum
 
 ## Overview
 
-This guide covers how to publish gsum-cli to npm and the setup that enables both npm and git-based installation methods.
+This guide covers how to publish gsum to npm and the setup that enables both npm and git-based installation methods.
 
 ## Current Status ✅
 
@@ -11,13 +11,13 @@ The gsum project is now configured for **dual distribution**:
 ### 1. npm/npx Installation (Ready to publish)
 ```bash
 # One-time usage
-npx gsum-cli
+npx gsum
 
 # Global installation
-npm install -g gsum-cli
+npm install -g gsum
 
 # Project dependency
-npm install --save-dev gsum-cli
+npm install --save-dev gsum
 ```
 
 ### 2. Git Installation (Current method)
@@ -53,7 +53,7 @@ gsum/
 
 1. **npm Account**: Create account at https://npmjs.com
 2. **npm Token**: Generate authentication token
-3. **Package Name**: Verify "gsum-cli" is available
+3. **Package Name**: Verify "gsum" is available ✅
 4. **GitHub Secrets**: Add `NPM_TOKEN` to repository secrets
 
 ### Manual Publishing
@@ -65,7 +65,7 @@ npm version patch  # or minor/major
 # 2. Test package
 npm pack --dry-run
 npm pack
-npm install -g ./gsum-cli-*.tgz
+npm install -g ./gsum-*.tgz
 
 # 3. Test functionality
 gsum --version
@@ -100,7 +100,7 @@ git push origin main --tags
 ### package.json Key Fields
 ```json
 {
-  "name": "gsum-cli",
+  "name": "gsum",
   "version": "1.0.0",
   "bin": {
     "gsum": "./bin/gsum.js"
@@ -159,13 +159,13 @@ mcp-server/
 ### As npm Package
 ```bash
 # Project analysis
-npx gsum-cli
+npx gsum
 
 # Focus on specific areas  
-npx gsum-cli --focus frontend
+npx gsum --focus frontend
 
 # Interactive mode
-npx gsum-cli interactive
+npx gsum interactive
 
 # In package.json scripts
 {
@@ -210,7 +210,7 @@ npm pack
 
 # Test installation
 mkdir test-install && cd test-install
-npm install ../gsum-cli-*.tgz
+npm install ../gsum-*.tgz
 
 # Test functionality
 npx gsum --version
@@ -238,7 +238,7 @@ All tests must pass before publishing:
 - [ ] `git push origin main --tags`
 - [ ] Monitor GitHub Actions
 - [ ] Verify npm package published
-- [ ] Test installation: `npx gsum-cli`
+- [ ] Test installation: `npx gsum`
 
 ### Post-publish
 - [ ] Update documentation
@@ -252,7 +252,7 @@ All tests must pass before publishing:
 
 **1. Package name conflicts**
 ```bash
-npm search gsum-cli  # Check availability
+npm search gsum  # Check availability
 ```
 
 **2. Authentication errors**
@@ -286,4 +286,4 @@ Track these metrics after npm publishing:
 
 ---
 
-**Ready to publish!** The gsum-cli package is fully configured for npm distribution while maintaining the existing git-based installation method.
+**Ready to publish!** The gsum package is fully configured for npm distribution while maintaining the existing git-based installation method.

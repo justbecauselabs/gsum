@@ -49,13 +49,13 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
         body: |
-          ## gsum-cli ${{ github.ref }}
+          ## gsum ${{ github.ref }}
           
           ### 📦 npm Installation
           ```bash
-          npm install -g gsum-cli
+          npm install -g gsum
           # or
-          npx gsum-cli
+          npx gsum
           ```
           
           ### 🔧 Git Installation

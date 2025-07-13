@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('📦 gsum-cli post-install setup...');
+console.log('📦 gsum post-install setup...');
 
 // Install CLI dependencies
 const cliDir = path.join(__dirname, '../cli');
@@ -21,7 +21,7 @@ if (fs.existsSync(cliPackageJson)) {
 }
 
 console.log('');
-console.log('🎉 gsum-cli installed successfully!');
+console.log('🎉 gsum installed successfully!');
 console.log('');
 console.log('🚀 Get started:');
 console.log('  gsum --help              # Show all options');

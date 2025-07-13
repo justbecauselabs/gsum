@@ -1,5 +1,5 @@
 {
-  "name": "gsum-cli",
+  "name": "gsum",
   "version": "1.0.0",
   "description": "AI-powered codebase summarization CLI with smart context optimization",
   "main": "lib/index.js",
