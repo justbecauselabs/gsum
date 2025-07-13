@@ -143,7 +143,7 @@ cat > "$HOME/bin/gsum" << 'EOF'
 GSUM_DIR="$(cd "$(dirname "$0")/../src/gsum/cli" 2>/dev/null && pwd)"
 if [ -z "$GSUM_DIR" ] || [ ! -f "$GSUM_DIR/gsum.js" ]; then
     # Fallback locations
-    for dir in "$HOME/src/gsum/cli" "$HOME/gsum/cli" "/opt/gsum/cli"; do
+    for dir in "$HOME/src/gsum/cli" "$HOME/gsum/cli" "/opt/gsum/cli" "$(pwd)/cli" "$GITHUB_WORKSPACE/cli"; do
         if [ -f "$dir/gsum.js" ]; then
             GSUM_DIR="$dir"
             break

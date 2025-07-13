@@ -29,7 +29,10 @@ jobs:
         npm ci
         
     - name: Install gsum CLI
-      run: make install
+      run: |
+        make install
+        # Add ~/bin to PATH for subsequent steps
+        echo "$HOME/bin" >> $GITHUB_PATH
       
     - name: Run comprehensive tests
       run: ./test.sh
@@ -103,8 +106,10 @@ jobs:
     - name: Check for sensitive files
       run: |
         # Check for common sensitive files
-        if find . -name "*.key" -o -name "*.pem" -o -name ".env" | grep -v node_modules | head -5; then
-          echo "Warning: Potential sensitive files found"
+        SENSITIVE_FILES=$(find . -name "*.key" -o -name "*.pem" -o -name ".env*" | grep -v node_modules | head -5)
+        if [ -n "$SENSITIVE_FILES" ]; then
+          echo "Warning: Potential sensitive files found:"
+          echo "$SENSITIVE_FILES"
           exit 1
         fi
         echo "No sensitive files detected"
