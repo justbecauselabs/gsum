@@ -112,10 +112,15 @@ is_diff_trivial() {
 # Helper function to run gsummarize-wrapper with proper error handling
 run_gsummarize_wrapper() {
     local target_dir="$1"
+    local output_mode="${2:-file}" # "file" (default) or "stdout"
     local temp_file=$(mktemp)
     local temp_error=$(mktemp)
+    local current_dir=$(pwd)
     
-    ~/bin/gsummarize-wrapper "$target_dir" > "$temp_file" 2> "$temp_error"
+    # Change to target directory for file-based workflow
+    cd "$target_dir" || exit 1
+    
+    ~/bin/gsummarize-wrapper . > "$temp_file" 2> "$temp_error"
     local exit_code=$?
     
     # Check if generation failed
@@ -124,26 +129,43 @@ run_gsummarize_wrapper() {
         if [ -s "$temp_error" ]; then
             cat "$temp_error" >&2
         fi
+        cd "$current_dir"
         rm -f "$temp_file" "$temp_error"
         return $exit_code
     fi
     
-    # Check if we got output
-    if [ ! -s "$temp_file" ]; then
-        echo "❌ ERROR: No summary content was generated" >&2
-        if [ -s "$temp_error" ]; then
-            echo "" >&2
-            echo "Error details:" >&2
-            cat "$temp_error" >&2
+    # Check if DIRECTORY_SUMMARY.md was created (normal case)
+    if [ -f "DIRECTORY_SUMMARY.md" ]; then
+        # Success - output the content based on mode
+        if [ "$output_mode" = "stdout" ]; then
+            cat "DIRECTORY_SUMMARY.md"
+        else
+            # For file mode, just output the content without removing the file
+            cat "DIRECTORY_SUMMARY.md"
         fi
+        cd "$current_dir"
         rm -f "$temp_file" "$temp_error"
-        return 1
+        return 0
     fi
     
-    # Success - output the content and clean up
-    cat "$temp_file"
+    # Fallback: check if we got stdout output
+    if [ -s "$temp_file" ]; then
+        cat "$temp_file"
+        cd "$current_dir"
+        rm -f "$temp_file" "$temp_error"
+        return 0
+    fi
+    
+    # No output generated
+    echo "❌ ERROR: No summary content was generated" >&2
+    if [ -s "$temp_error" ]; then
+        echo "" >&2
+        echo "Error details:" >&2
+        cat "$temp_error" >&2
+    fi
+    cd "$current_dir"
     rm -f "$temp_file" "$temp_error"
-    return 0
+    return 1
 }
 
 # Function to generate ephemeral summary to stdout
@@ -156,8 +178,11 @@ generate_ephemeral() {
     
     # Generate the summary using helper function
     local summary_content
-    summary_content=$(run_gsummarize_wrapper ".")
+    summary_content=$(run_gsummarize_wrapper "." "stdout")
     local exit_code=$?
+    
+    # Clean up the DIRECTORY_SUMMARY.md file if it was created (ephemeral mode)
+    rm -f "DIRECTORY_SUMMARY.md"
     
     # Return to original directory
     cd "$current_dir"
