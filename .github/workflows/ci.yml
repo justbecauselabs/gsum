@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        
+    - name: Install CLI dependencies
+      run: |
+        cd cli
+        npm ci
+        
+    - name: Install gsum CLI
+      run: make install
+      
+    - name: Run comprehensive tests
+      run: ./test.sh
+      
+    - name: Test CLI functionality
+      run: |
+        # Test basic commands work
+        gsum --version
+        gsum --help
+        
+        # Test fingerprint on the repo itself
+        gsum fingerprint .
+        
+        # Test other commands don't crash
+        gsum interactive --help
+        gsum plan --help
+        gsum save --help
+        
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        
+    - name: Install CLI dependencies
+      run: |
+        cd cli
+        npm ci
+        
+    - name: Run ESLint (if configured)
+      run: |
+        cd cli
+        if [ -f .eslintrc.js ] || [ -f .eslintrc.json ] || [ -f package.json ]; then
+          if npm list eslint > /dev/null 2>&1; then
+            npm run lint || echo "No lint script found"
+          else
+            echo "ESLint not installed, skipping"
+          fi
+        else
+          echo "No ESLint configuration found, skipping"
+        fi
+        
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        
+    - name: Install CLI dependencies
+      run: |
+        cd cli
+        npm ci
+        
+    - name: Run npm audit
+      run: |
+        cd cli
+        npm audit --audit-level moderate
+        
+    - name: Check for sensitive files
+      run: |
+        # Check for common sensitive files
+        if find . -name "*.key" -o -name "*.pem" -o -name ".env" | grep -v node_modules | head -5; then
+          echo "Warning: Potential sensitive files found"
+          exit 1
+        fi
+        echo "No sensitive files detected"

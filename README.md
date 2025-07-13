@@ -23,6 +23,12 @@ gsum analyzes your entire codebase and generates comprehensive, AI-powered docum
 - 🔍 **Git-Aware**: Only regenerates when significant changes occur (>500 lines)
 - 🎯 **AI-Powered**: Uses Gemini API with Claude fallback options
 - 🛡️ **Standalone**: No external dependencies or MCP servers required
+- 📊 **Context Levels**: Choose minimal (2-3k), standard (5-7k), or comprehensive (10k+) summaries
+- 🔍 **Focus Areas**: Target specific areas like frontend, API, database, testing, deployment, tooling, or documentation
+- 📂 **Path-Specific**: Analyze specific directories instead of entire codebase
+- 🎮 **Interactive Mode**: Guided configuration for optimal results
+- 🧠 **Smart File Inclusion**: Automatically include the most relevant files based on git history and imports
+- 🗺️ **Codebase Fingerprint**: Ultra-compressed project overview in seconds
 
 ## Installation
 
@@ -76,9 +82,9 @@ gsum analyzes your codebase locally:
 
 ### 2. Generation Phase (AI-Powered)
 gsum creates a detailed prompt and sends it to Gemini:
-- 📝 Builds comprehensive prompt with project context
+- 📝 Builds prompt tailored to your chosen context level
 - 🤖 Gemini analyzes and generates documentation
-- 📄 Returns ~10,000 word architectural guide
+- 📄 Returns documentation sized for your needs (2-3k to 10k+ words)
 
 ### 3. Output Phase
 Depending on the command:
@@ -108,6 +114,19 @@ gsum llm-usage
 
 # Show detailed help
 gsum --help
+
+# Interactive mode - guided configuration
+gsum interactive
+# or short alias
+gsum i
+
+# Ultra-compressed project overview
+gsum fingerprint
+# or short alias
+gsum fp
+
+# Fingerprint as JSON
+gsum fingerprint --format json
 ```
 
 ### Key Options
@@ -131,6 +150,168 @@ gsum --fallback
 # Try Claude CLI on quota error (experimental)
 gsum --claude-execute
 ```
+
+### Context Levels 🎯
+
+Control the depth and detail of generated summaries:
+
+```bash
+# Minimal context (2-3k words) - Essential architecture only
+gsum --context-level minimal
+
+# Standard context (5-7k words) - Balanced detail [DEFAULT for gsum]
+gsum --context-level standard
+
+# Comprehensive context (10k+ words) - Full documentation [DEFAULT for save]
+gsum --context-level comprehensive
+```
+
+**When to use each level:**
+- **minimal**: Quick context for AI assistants with limited windows
+- **standard**: Day-to-day development tasks and code reviews
+- **comprehensive**: Full architectural documentation, onboarding
+
+### Focus Areas 🔍
+
+Generate targeted summaries for specific parts of your codebase:
+
+```bash
+# Focus on frontend components and UI
+gsum --focus frontend
+
+# Focus on backend API and endpoints
+gsum --focus api
+
+# Focus on database models and schemas
+gsum --focus database
+
+# Focus on test structure and coverage
+gsum --focus testing
+
+# Focus on deployment and CI/CD
+gsum --focus deployment
+
+# Focus on build tools and configuration
+gsum --focus tooling
+
+# Focus on documentation and guides
+gsum --focus documentation
+```
+
+**How it works:**
+- Filters files based on directories, extensions, and keywords
+- Adjusts document sections to match the focus area
+- Reduces noise by excluding unrelated code
+
+**Example combinations:**
+```bash
+# Quick frontend overview
+gsum --focus frontend --context-level minimal
+
+# Comprehensive API documentation
+gsum save --focus api --context-level comprehensive
+```
+
+### Path-Specific Summaries 📂
+
+Generate summaries for specific directories:
+
+```bash
+# Summarize a specific directory
+gsum src/api
+
+# Summarize a subdirectory
+gsum src/components/Auth
+
+# Save summary for a specific path
+gsum save backend/
+
+# Combine with other options
+gsum src/frontend --focus frontend --context-level minimal
+```
+
+**Benefits:**
+- Analyze only the parts you're working on
+- Faster generation for large codebases
+- More focused and relevant summaries
+
+### Interactive Mode 🎮
+
+Not sure which options to use? Let gsum guide you:
+
+```bash
+gsum interactive
+# or
+gsum i
+```
+
+The interactive mode will walk you through:
+- Choosing between ephemeral or persistent summaries
+- Selecting the right context level
+- Picking a focus area if needed
+- Configuring advanced options
+- Reviewing your choices before execution
+
+Perfect for first-time users or complex configurations!
+
+### Smart File Inclusion 🧠
+
+Automatically include the most relevant files in your summary:
+
+```bash
+# Include 10 most relevant files
+gsum --smart-files 10
+
+# Include 5 most relevant files for a specific task
+gsum plan "add authentication" --smart-files 5
+
+# Combine with other options
+gsum --focus api --smart-files 15
+```
+
+**How it works:**
+- Analyzes git history for recently changed files
+- Identifies highly imported/central files
+- Considers file type importance and complexity
+- Automatically includes file contents in the summary
+
+**Perfect for:**
+- Getting AI to focus on the exact files that matter
+- Task-specific planning with relevant code context
+- Understanding core architecture through key files
+
+### Codebase Fingerprint 🗺️
+
+Get an ultra-compressed overview of any project:
+
+```bash
+# Generate fingerprint
+gsum fingerprint
+
+# Fingerprint for specific directory
+gsum fingerprint src/
+
+# Output as JSON
+gsum fingerprint --format json
+```
+
+**Example output:**
+```
+🗺️  Codebase Fingerprint
+
+📦 my-app
+🔧 Tech: React/TypeScript/Node.js
+🏗️  Structure: Monorepo with 3 packages
+📄 Files: 127 (.ts: 89, .tsx: 38, .json: 15)
+🎯 Patterns: Redux state, REST API, Unit tests
+📚 Dependencies: 47 prod, 23 dev
+🌿 Git: main branch, 1,234 commits, 5 contributors
+```
+
+**Perfect for:**
+- Quick project assessment
+- Sharing project overview in discussions
+- Understanding new codebases at a glance
 
 ### Advanced Options
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const { Command } = require('commander');
-const chalk = require('chalk');
 const path = require('path');
 const { version } = require('./package.json');
 
@@ -11,6 +10,8 @@ const { runSaveSummary } = require('./lib/commands/save');
 const { runPlan } = require('./lib/commands/plan');
 const { runUpdate } = require('./lib/commands/update');
 const { runLLMUsage } = require('./lib/commands/llm-usage');
+const { runInteractive } = require('./lib/commands/interactive');
+const { runFingerprint } = require('./lib/commands/fingerprint');
 
 // Global state for verbose/debug
 global.verbose = false;
@@ -24,11 +25,11 @@ function log(message, level = 'info') {
   if (level === 'verbose' && !global.verbose && !global.debug) return;
   
   const prefix = {
-    error: chalk.red('ERROR:'),
-    warn: chalk.yellow('WARN:'),
-    info: chalk.blue('INFO:'),
-    verbose: chalk.gray('VERBOSE:'),
-    debug: chalk.gray('DEBUG:')
+    error: '\x1b[31mERROR:\x1b[0m',
+    warn: '\x1b[33mWARN:\x1b[0m',
+    info: '\x1b[34mINFO:\x1b[0m',
+    verbose: '\x1b[90mVERBOSE:\x1b[0m',
+    debug: '\x1b[90mDEBUG:\x1b[0m'
   };
   
   console.error(`${prefix[level] || ''} ${message}`);
@@ -54,18 +55,33 @@ program
 
 // Default command - ephemeral summary
 program
-  .command('summary', { isDefault: true })
+  .command('summary [path]', { isDefault: true })
   .description('Generate ephemeral summary to stdout (default)')
   .option('-f, --format <format>', 'output format (markdown, json)', 'markdown')
   .option('--depth <n>', 'directory traversal depth', parseInt, 10)
   .option('--include <patterns>', 'include file patterns (comma-separated)')
   .option('--exclude <patterns>', 'exclude file patterns (comma-separated)')
   .option('--no-git', 'disable git integration')
+  .option('--context-level <level>', 'context level: minimal, standard, comprehensive', 'standard')
+  .option('--focus <area>', 'focus on specific area: frontend, api, database, testing, deployment, tooling, documentation')
+  .option('--smart-files <n>', 'include N most relevant files based on git/import analysis', parseInt)
   .option('--fallback', 'generate Claude fallback prompt on Gemini quota error')
   .option('--claude-execute', 'try to execute with Claude CLI on Gemini quota error')
-  .action(async (options) => {
+  .action(async (path, options) => {
     try {
-      await runDefaultSummary(options);
+      // Validate context level
+      const validLevels = ['minimal', 'standard', 'comprehensive'];
+      if (options.contextLevel && !validLevels.includes(options.contextLevel)) {
+        throw new Error(`Invalid context level: ${options.contextLevel}. Must be one of: ${validLevels.join(', ')}`);
+      }
+      
+      // Validate focus area
+      const validFocusAreas = ['frontend', 'api', 'database', 'testing', 'deployment', 'tooling', 'documentation'];
+      if (options.focus && !validFocusAreas.includes(options.focus)) {
+        throw new Error(`Invalid focus area: ${options.focus}. Must be one of: ${validFocusAreas.join(', ')}`);
+      }
+      
+      await runDefaultSummary({ ...options, path });
     } catch (error) {
       log(error.message, 'error');
       if (global.debug) {
@@ -77,7 +93,7 @@ program
 
 // Save command - persistent summary
 program
-  .command('save')
+  .command('save [path]')
   .description('Save persistent ARCHITECTURE.gsum.md file')
   .option('-f, --file <path>', 'output file path', 'ARCHITECTURE.gsum.md')
   .option('--force', 'force regeneration even if no changes')
@@ -86,9 +102,24 @@ program
   .option('--include <patterns>', 'include file patterns (comma-separated)')
   .option('--exclude <patterns>', 'exclude file patterns (comma-separated)')
   .option('--no-git', 'disable git integration')
-  .action(async (options) => {
+  .option('--context-level <level>', 'context level: minimal, standard, comprehensive', 'comprehensive')
+  .option('--focus <area>', 'focus on specific area: frontend, api, database, testing, deployment, tooling, documentation')
+  .option('--smart-files <n>', 'include N most relevant files based on git/import analysis', parseInt)
+  .action(async (path, options) => {
     try {
-      await runSaveSummary(options);
+      // Validate context level
+      const validLevels = ['minimal', 'standard', 'comprehensive'];
+      if (options.contextLevel && !validLevels.includes(options.contextLevel)) {
+        throw new Error(`Invalid context level: ${options.contextLevel}. Must be one of: ${validLevels.join(', ')}`);
+      }
+      
+      // Validate focus area
+      const validFocusAreas = ['frontend', 'api', 'database', 'testing', 'deployment', 'tooling', 'documentation'];
+      if (options.focus && !validFocusAreas.includes(options.focus)) {
+        throw new Error(`Invalid focus area: ${options.focus}. Must be one of: ${validFocusAreas.join(', ')}`);
+      }
+      
+      await runSaveSummary({ ...options, path });
     } catch (error) {
       log(error.message, 'error');
       if (global.debug) {
@@ -151,6 +182,41 @@ program
   .action(async () => {
     try {
       await runLLMUsage();
+    } catch (error) {
+      log(error.message, 'error');
+      if (global.debug) {
+        console.error(error.stack);
+      }
+      process.exit(1);
+    }
+  });
+
+// Interactive mode
+program
+  .command('interactive')
+  .alias('i')
+  .description('Interactive mode - guided configuration')
+  .action(async () => {
+    try {
+      await runInteractive();
+    } catch (error) {
+      log(error.message, 'error');
+      if (global.debug) {
+        console.error(error.stack);
+      }
+      process.exit(1);
+    }
+  });
+
+// Fingerprint command
+program
+  .command('fingerprint [path]')
+  .alias('fp')
+  .description('Generate ultra-compressed project overview')
+  .option('-f, --format <format>', 'output format (text, json)', 'text')
+  .action(async (path, options) => {
+    try {
+      await runFingerprint({ ...options, path });
     } catch (error) {
       log(error.message, 'error');
       if (global.debug) {

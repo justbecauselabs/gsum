@@ -1,7 +1,8 @@
 const { SummaryGenerator } = require('../generator');
 
 async function runSaveSummary(options) {
-  const targetDir = process.cwd();
+  const path = require('path');
+  const targetDir = options.path ? path.resolve(options.path) : process.cwd();
   
   if (global.verbose) {
     global.log(`Saving summary to ${options.file} in ${targetDir}`, 'verbose');

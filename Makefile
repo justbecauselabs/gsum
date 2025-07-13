@@ -65,42 +65,64 @@ install-commands:
 	# Note: Always overwrite existing commands to ensure they're up-to-date
 	# Create /gsum command
 	@echo '---' > ~/.claude/commands/gsum.md
-	@echo 'description: Generates a fresh, detailed summary of the current project for ephemeral context.' >> ~/.claude/commands/gsum.md
+	@echo 'description: Generates AI-optimized project summaries with smart features. Supports context levels (minimal/standard/comprehensive), focus areas (frontend/api/database/testing/deployment/tooling/documentation), path-specific analysis, and smart file inclusion.' >> ~/.claude/commands/gsum.md
 	@echo 'allowed-tools: [bash, Read, Grep, Glob, LS]' >> ~/.claude/commands/gsum.md
 	@echo '---' >> ~/.claude/commands/gsum.md
 	@echo '' >> ~/.claude/commands/gsum.md
-	@echo 'Generating ephemeral project summary for current context...' >> ~/.claude/commands/gsum.md
+	@echo 'Generating ephemeral project summary with gsum v1.0...' >> ~/.claude/commands/gsum.md
+	@echo '' >> ~/.claude/commands/gsum.md
+	@echo '# Examples:' >> ~/.claude/commands/gsum.md
+	@echo '# /gsum                                  - Standard summary' >> ~/.claude/commands/gsum.md
+	@echo '# /gsum --context-level minimal          - Quick 2-3k word summary' >> ~/.claude/commands/gsum.md
+	@echo '# /gsum --focus frontend                 - Frontend-focused summary' >> ~/.claude/commands/gsum.md
+	@echo '# /gsum src/api --smart-files 10         - API directory with relevant files' >> ~/.claude/commands/gsum.md
 	@echo '' >> ~/.claude/commands/gsum.md
 	@echo '!claude-gsum-wrapper ephemeral $$ARGUMENTS' >> ~/.claude/commands/gsum.md
 	
 	# Create /gsum-save command
 	@echo '---' > ~/.claude/commands/gsum-save.md
-	@echo 'description: Creates or updates a persistent ARCHITECTURE.gsum.md file with intelligent git-aware regeneration.' >> ~/.claude/commands/gsum-save.md
+	@echo 'description: Creates or updates a persistent ARCHITECTURE.gsum.md file with intelligent git-aware regeneration. Supports all gsum features including context levels, focus areas, and smart file inclusion.' >> ~/.claude/commands/gsum-save.md
 	@echo 'allowed-tools: [bash, Read, Write, Grep, Glob, LS]' >> ~/.claude/commands/gsum-save.md
 	@echo '---' >> ~/.claude/commands/gsum-save.md
 	@echo '' >> ~/.claude/commands/gsum-save.md
-	@echo 'Creating/updating persistent project summary (ARCHITECTURE.gsum.md)...' >> ~/.claude/commands/gsum-save.md
+	@echo 'Creating/updating persistent project summary with gsum v1.0...' >> ~/.claude/commands/gsum-save.md
+	@echo '' >> ~/.claude/commands/gsum-save.md
+	@echo '# Only regenerates when >500 lines have changed' >> ~/.claude/commands/gsum-save.md
+	@echo '# Use --force to override git checks' >> ~/.claude/commands/gsum-save.md
 	@echo '' >> ~/.claude/commands/gsum-save.md
 	@echo '!claude-gsum-wrapper save $$ARGUMENTS' >> ~/.claude/commands/gsum-save.md
 	
 	# Create /gsum-plan command
 	@echo '---' > ~/.claude/commands/gsum-plan.md
-	@echo 'description: Generates a detailed implementation plan for a specific task based on codebase analysis.' >> ~/.claude/commands/gsum-plan.md
+	@echo 'description: Generates detailed, actionable implementation plans with step-by-step tasks, file modifications, and code examples. Supports smart file inclusion to focus on relevant code.' >> ~/.claude/commands/gsum-plan.md
 	@echo 'allowed-tools: [bash, Read, Grep, Glob, LS]' >> ~/.claude/commands/gsum-plan.md
 	@echo 'parameter: task The task to create an implementation plan for' >> ~/.claude/commands/gsum-plan.md
 	@echo '---' >> ~/.claude/commands/gsum-plan.md
 	@echo '' >> ~/.claude/commands/gsum-plan.md
-	@echo 'Generating implementation plan for: $$ARGUMENTS' >> ~/.claude/commands/gsum-plan.md
+	@echo 'Generating implementation plan with gsum v1.0 for: $$ARGUMENTS' >> ~/.claude/commands/gsum-plan.md
+	@echo '' >> ~/.claude/commands/gsum-plan.md
+	@echo '# Tip: Use --smart-files 10 to include relevant code in the plan' >> ~/.claude/commands/gsum-plan.md
 	@echo '' >> ~/.claude/commands/gsum-plan.md
 	@echo '!claude-gsum-wrapper plan $$ARGUMENTS' >> ~/.claude/commands/gsum-plan.md
+	
+	# Create /gsum-fingerprint command
+	@echo '---' > ~/.claude/commands/gsum-fingerprint.md
+	@echo 'description: Generates an ultra-compressed project overview with tech stack, structure, patterns, and key metrics.' >> ~/.claude/commands/gsum-fingerprint.md
+	@echo 'allowed-tools: [bash, Read, Grep, Glob, LS]' >> ~/.claude/commands/gsum-fingerprint.md
+	@echo '---' >> ~/.claude/commands/gsum-fingerprint.md
+	@echo '' >> ~/.claude/commands/gsum-fingerprint.md
+	@echo 'Generating codebase fingerprint with gsum v1.0...' >> ~/.claude/commands/gsum-fingerprint.md
+	@echo '' >> ~/.claude/commands/gsum-fingerprint.md
+	@echo '!gsum fingerprint $$ARGUMENTS' >> ~/.claude/commands/gsum-fingerprint.md
 	
 	@echo ""
 	@echo "✅ Claude commands installed successfully!"
 	@echo ""
 	@echo "Available commands in Claude:"
-	@echo "  /gsum         - Generate ephemeral summary"
-	@echo "  /gsum-save    - Create/update ARCHITECTURE.gsum.md"
-	@echo "  /gsum-plan    - Generate implementation plan"
+	@echo "  /gsum             - Generate ephemeral summary (with smart options)"
+	@echo "  /gsum-save        - Create/update ARCHITECTURE.gsum.md"
+	@echo "  /gsum-plan        - Generate implementation plan"
+	@echo "  /gsum-fingerprint - Ultra-compressed project overview"
 
 # Update to latest version
 update:
@@ -120,6 +142,7 @@ clean:
 	@rm -f ~/.claude/commands/gsum.md
 	@rm -f ~/.claude/commands/gsum-save.md
 	@rm -f ~/.claude/commands/gsum-plan.md
+	@rm -f ~/.claude/commands/gsum-fingerprint.md
 	@rm -rf ~/bin/gsum-mcp-server
 	@echo "✅ gsum has been removed"
 	@echo "   Note: You may want to remove aliases from your shell RC file"

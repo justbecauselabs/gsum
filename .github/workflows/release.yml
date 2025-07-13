@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        
+    - name: Install CLI dependencies
+      run: |
+        cd cli
+        npm ci
+        
+    - name: Run tests
+      run: |
+        make install
+        ./test.sh
+        
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## Changes in this Release
+          
+          ### Features
+          - Smart Context Levels (minimal/standard/comprehensive)
+          - Focus Areas (frontend/api/database/testing/deployment/tooling/documentation)
+          - Path-Specific Summaries
+          - Interactive Mode
+          - Smart File Inclusion
+          - Codebase Fingerprint
+          
+          ### Installation
+          ```bash
+          git clone https://github.com/jhurray/gsum.git
+          cd gsum
+          make install
+          ```
+          
+          ### Usage
+          ```bash
+          gsum                    # Generate summary
+          gsum --focus frontend   # Focus on frontend
+          gsum fingerprint        # Quick overview
+          gsum interactive        # Guided mode
+          ```
+          
+        draft: false
+        prerelease: false

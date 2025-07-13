@@ -59,6 +59,45 @@ const DEEP_DIRECTORIES = [
   'venv', '.venv', 'coverage', '.nyc_output'
 ];
 
+// Focus area patterns
+const FOCUS_PATTERNS = {
+  frontend: {
+    include: ['components', 'pages', 'views', 'layouts', 'ui', 'client', 'src/components', 'src/pages', 'app'],
+    extensions: ['.jsx', '.tsx', '.vue', '.svelte', '.css', '.scss', '.less', '.styled.js'],
+    keywords: ['component', 'view', 'page', 'layout', 'ui', 'style', 'theme']
+  },
+  api: {
+    include: ['api', 'routes', 'controllers', 'middleware', 'server', 'endpoints', 'handlers', 'services'],
+    extensions: ['.js', '.ts', '.py', '.go', '.java', '.rb'],
+    keywords: ['route', 'controller', 'endpoint', 'handler', 'middleware', 'api', 'rest', 'graphql']
+  },
+  database: {
+    include: ['models', 'schemas', 'migrations', 'db', 'database', 'entities', 'repositories'],
+    extensions: ['.sql', '.prisma', '.js', '.ts', '.py'],
+    keywords: ['model', 'schema', 'migration', 'entity', 'repository', 'database', 'table', 'query']
+  },
+  testing: {
+    include: ['test', 'tests', '__tests__', 'spec', 'e2e', 'integration', 'unit'],
+    extensions: ['.test.js', '.spec.js', '.test.ts', '.spec.ts', '.test.jsx', '.test.tsx', '_test.go', '_test.py'],
+    keywords: ['test', 'spec', 'describe', 'it', 'expect', 'assert', 'mock', 'stub']
+  },
+  deployment: {
+    include: ['deploy', 'deployment', '.github/workflows', 'ci', 'cd', 'docker', 'k8s', 'kubernetes', 'terraform', 'ansible'],
+    extensions: ['.yml', '.yaml', 'Dockerfile', '.dockerignore', '.tf', '.tfvars', 'Jenkinsfile'],
+    keywords: ['deploy', 'build', 'pipeline', 'workflow', 'container', 'orchestration', 'infrastructure']
+  },
+  tooling: {
+    include: ['scripts', 'tools', 'bin', 'utils', 'build', 'webpack', 'vite', 'rollup', 'babel', 'eslint', 'prettier'],
+    extensions: ['.config.js', '.config.ts', 'webpack.config.js', 'vite.config.js', '.eslintrc', '.prettierrc', 'Makefile'],
+    keywords: ['config', 'build', 'bundle', 'lint', 'format', 'compile', 'transpile', 'script']
+  },
+  documentation: {
+    include: ['docs', 'documentation', 'wiki', 'guides', 'tutorials', 'examples'],
+    extensions: ['.md', '.mdx', '.rst', '.txt', '.adoc'],
+    keywords: ['readme', 'guide', 'tutorial', 'example', 'documentation', 'usage', 'api-docs']
+  }
+};
+
 class ProjectAnalyzer {
   constructor(options = {}) {
     this.maxDepth = options.depth || 10;
@@ -67,6 +106,7 @@ class ProjectAnalyzer {
     this.useGit = options.git !== false;
     this.verbose = global.verbose || false;
     this.debug = global.debug || false;
+    this.focusArea = options.focus || null;
   }
 
   async analyze(dirPath) {
@@ -371,11 +411,12 @@ class ProjectAnalyzer {
   }
 
   detectArchitecture(projectInfo) {
-    const hasBackend = projectInfo.techStack.some(tech => 
+    const techStackArray = Array.from(projectInfo.techStack);
+    const hasBackend = techStackArray.some(tech => 
       ['Express.js', 'Django', 'Flask', 'Spring', 'Rails'].includes(tech)
     );
     
-    const hasFrontend = projectInfo.techStack.some(tech =>
+    const hasFrontend = techStackArray.some(tech =>
       ['React', 'Vue.js', 'Angular', 'Svelte'].includes(tech)
     );
 
@@ -385,7 +426,7 @@ class ProjectAnalyzer {
       return 'Backend';
     } else if (hasFrontend) {
       return 'Frontend';
-    } else if (projectInfo.techStack.includes('React Native') || projectInfo.techStack.includes('Flutter')) {
+    } else if (projectInfo.techStack.has('React Native') || projectInfo.techStack.has('Flutter')) {
       return 'Mobile';
     } else {
       return 'Library/Tool';
@@ -446,7 +487,46 @@ class ProjectAnalyzer {
         return true;
       }
     }
+    
+    // Check focus area filtering
+    if (this.focusArea && !this.matchesFocusArea(name, fullPath)) {
+      return true;
+    }
 
+    return false;
+  }
+  
+  matchesFocusArea(name, fullPath) {
+    if (!this.focusArea || !FOCUS_PATTERNS[this.focusArea]) {
+      return true;
+    }
+    
+    const patterns = FOCUS_PATTERNS[this.focusArea];
+    const ext = path.extname(name).toLowerCase();
+    const relativePath = path.relative(process.cwd(), fullPath);
+    
+    // Check if file extension matches
+    if (patterns.extensions && patterns.extensions.some(e => name.endsWith(e))) {
+      return true;
+    }
+    
+    // Check if path contains focus directories
+    if (patterns.include) {
+      for (const dir of patterns.include) {
+        if (relativePath.includes(dir + path.sep) || relativePath.includes(path.sep + dir + path.sep)) {
+          return true;
+        }
+      }
+    }
+    
+    // Check if filename contains focus keywords
+    if (patterns.keywords) {
+      const lowerName = name.toLowerCase();
+      if (patterns.keywords.some(keyword => lowerName.includes(keyword))) {
+        return true;
+      }
+    }
+    
     return false;
   }
 
