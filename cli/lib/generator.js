@@ -261,8 +261,9 @@ ${projectInfo.smartFiles ? this.buildSmartFilesSection(projectInfo.smartFiles) :
 Based on the project information above, create this architecture-focused technical specification. Make sure to:
 1. Create a ${contextLevel === 'minimal' ? 'concise' : contextLevel === 'standard' ? 'balanced' : 'comprehensive'} document - aim for ${targetWords}
 2. ${contextLevel !== 'minimal' ? 'Include actual code examples from the project where relevant' : 'Include only essential code examples'}
-3. ${contextLevel === 'comprehensive' ? 'Be exhaustive in documenting every aspect' : 'Focus on the most important aspects'}
+3. ${contextLevel === 'comprehensive' ? 'Be thorough but focused' : 'Focus on the most important aspects'}
 4. Provide accurate, fact-checked information
+5. Output ONLY the markdown document - no thinking process, no preamble
 
 REMEMBER: This is optimized for ${contextLevel === 'minimal' ? 'quick context with minimal tokens' : contextLevel === 'standard' ? 'balanced context for AI assistants' : 'complete documentation'}.`;
   }
@@ -351,12 +352,12 @@ IMPORTANT:
   getTargetWordsForLevel(contextLevel) {
     switch (contextLevel) {
       case 'minimal':
-        return '2,000-3,000 words';
+        return '1,000-2,000 words';
       case 'standard':
-        return '5,000-7,000 words';
+        return '3,000-4,000 words';
       case 'comprehensive':
       default:
-        return '10,000+ words';
+        return '5,000-7,000 words';
     }
   }
   

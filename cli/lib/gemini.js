@@ -40,12 +40,12 @@ class GeminiClient {
         const summaryContent = await fs.readFile(summaryPath, 'utf8');
         // Clean up the generated file
         await fs.unlink(summaryPath);
-        return summaryContent;
+        return this.cleanOutput(summaryContent);
       } catch {
         // If no file was created, check stdout
         const stdoutContent = await this.readFile(tempOutput);
         if (stdoutContent && stdoutContent.trim()) {
-          return stdoutContent;
+          return this.cleanOutput(stdoutContent);
         }
       }
 
@@ -58,8 +58,8 @@ class GeminiClient {
 
   async executeGemini(prompt, targetDir, tempOutput, tempError) {
     return new Promise((resolve, reject) => {
-      // Build the command
-      const cmd = `cd "${targetDir}" && gemini --yolo > "${tempOutput}" 2> "${tempError}"`;
+      // Build the command - redirect MCP stderr to /dev/null
+      const cmd = `cd "${targetDir}" && (gemini --yolo 2>&1 | grep -v 'MCP STDERR' > "${tempOutput}") 2> "${tempError}"`;
       
       if (global.verbose || global.debug) {
         global.log(`🚀 Starting Gemini execution...`, 'info');
@@ -179,6 +179,21 @@ class GeminiClient {
         // Ignore cleanup errors
       }
     }
+  }
+
+  cleanOutput(content) {
+    // Remove MCP stderr messages
+    let cleaned = content.replace(/MCP STDERR.*\n/g, '');
+    
+    // If the content starts with Gemini's thinking process, extract only the markdown
+    // Look for the first markdown header (# PROJECT OVERVIEW or similar)
+    const markdownStart = cleaned.search(/^#\s+[A-Z]/m);
+    if (markdownStart > 0) {
+      // There's text before the markdown - likely Gemini's thinking
+      cleaned = cleaned.substring(markdownStart);
+    }
+    
+    return cleaned.trim();
   }
 }
 

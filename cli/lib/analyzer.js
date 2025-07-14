@@ -100,7 +100,7 @@ const FOCUS_PATTERNS = {
 
 class ProjectAnalyzer {
   constructor(options = {}) {
-    this.maxDepth = options.depth || 10;
+    this.maxDepth = options.depth || 5;
     this.includePatterns = options.include ? options.include.split(',') : null;
     this.excludePatterns = options.exclude ? options.exclude.split(',') : IGNORED_PATTERNS;
     this.useGit = options.git !== false;
