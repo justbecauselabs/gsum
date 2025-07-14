@@ -577,7 +577,11 @@ IMPORTANT:
       prompt += `\nPackage Info:\n`;
       prompt += `- Name: ${projectInfo.packageInfo.name}\n`;
       prompt += `- Version: ${projectInfo.packageInfo.version}\n`;
-      prompt += `- Dependencies: ${Object.keys(projectInfo.packageInfo.dependencies || {}).length} prod, ${Object.keys(projectInfo.packageInfo.devDependencies || {}).length} dev\n`;
+      if (projectInfo.packageInfo.dependencies || projectInfo.packageInfo.devDependencies) {
+        const prodDeps = projectInfo.packageInfo.dependencies ? Object.keys(projectInfo.packageInfo.dependencies).length : 0;
+        const devDeps = projectInfo.packageInfo.devDependencies ? Object.keys(projectInfo.packageInfo.devDependencies).length : 0;
+        prompt += `- Dependencies: ${prodDeps} prod, ${devDeps} dev\n`;
+      }
     }
     
     if (projectInfo.gitInfo) {
@@ -586,12 +590,20 @@ IMPORTANT:
       prompt += `- Remote: ${projectInfo.gitInfo.remote}\n`;
     }
     
-    prompt += `\nFile Breakdown:\n`;
-    Object.entries(projectInfo.extensions).forEach(([ext, count]) => {
-      if (count > 0) {
-        prompt += `- ${ext}: ${count} files\n`;
-      }
-    });
+    // File count info
+    prompt += `\nProject Structure:\n`;
+    if (projectInfo.structure) {
+      const countFiles = (structure) => {
+        let count = 0;
+        Object.values(structure).forEach(item => {
+          if (item.type === 'file') count++;
+          else if (item.children) count += countFiles(item.children);
+        });
+        return count;
+      };
+      const topLevelDirs = Object.keys(projectInfo.structure).filter(k => projectInfo.structure[k].type === 'directory');
+      prompt += `- Top-level directories: ${topLevelDirs.join(', ') || 'none'}\n`;
+    }
     
     if (projectInfo.smartFiles && projectInfo.smartFiles.contents) {
       prompt += `\nKey Files (based on importance):\n`;
