@@ -17,7 +17,9 @@ class SummaryGenerator {
 
   async generate(targetDir, options = {}) {
     const mode = options.mode || 'ephemeral';
-    const outputFile = options.file || (mode === 'ephemeral' ? 'GSUM_EPHEMERAL.md' : 'ARCHITECTURE.gsum.md');
+    const timestamp = Date.now();
+    const outputFile = options.file || 
+      (mode === 'ephemeral' ? `.gsum_temp_${timestamp}.md` : 'ARCHITECTURE.gsum.md');
     const fullOutputPath = path.join(targetDir, outputFile);
     
     // Auto-enable verbose mode when running through Claude Code
@@ -148,10 +150,11 @@ class SummaryGenerator {
 
   async generateWithGemini(projectInfo, mode, contextLevel) {
     let outputFile;
+    const timestamp = Date.now();
     if (mode === 'plan') {
-      outputFile = 'GSUM_PLAN.md';
+      outputFile = `.gsum_plan_${timestamp}.md`;
     } else if (mode === 'ephemeral') {
-      outputFile = 'GSUM_EPHEMERAL.md';
+      outputFile = `.gsum_temp_${timestamp}.md`;
     } else {
       outputFile = this.options.file || 'ARCHITECTURE.gsum.md';
     }
