@@ -523,7 +523,7 @@ Created by [jhurray](https://github.com/jhurray)
 
 ## Changelog
 
-### v1.0.0
+### v0.1.0
 - **npm Distribution**: Available via `npm install -g gsum` and `npx gsum`
 - **Smart Context Levels**: Minimal, standard, and comprehensive summaries
 - **Focus Areas**: Target frontend, API, database, testing, deployment, tooling, documentation

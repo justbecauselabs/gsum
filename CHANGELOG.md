@@ -5,7 +5,7 @@ All notable changes to gsum-cli will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2025-07-13
+## [0.1.0] - 2025-07-13
 
 ### Added
 - **Smart Context Levels**: Choose between minimal, standard, and comprehensive context
@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Codebase Fingerprint**: Ultra-compressed project overview
 - **Comprehensive CLI**: Full-featured command interface
 - **GitHub Actions CI**: Automated testing across Node.js versions
-- **npm Distribution**: Available via `npx gsum-cli` and `npm install -g gsum-cli`
+- **npm Distribution**: Available via `npx gsum` and `npm install -g gsum`
 
 ### Features
 - AI-powered codebase analysis using Gemini and Claude
