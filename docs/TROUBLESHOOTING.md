@@ -154,6 +154,8 @@ For large codebases:
 
 If gsum times out during AI generation:
 
+**Note for Claude Code users**: Claude Code has a 2-minute command timeout that overrides gsum's timeout. For longer operations, run gsum directly in your terminal instead of through Claude Code commands.
+
 1. **Increase timeout** (default is 5 minutes):
    ```bash
    export GSUM_TIMEOUT=600000  # 10 minutes in milliseconds
@@ -170,6 +172,15 @@ If gsum times out during AI generation:
    - Using `--context-level minimal` for faster generation
    - Focusing on specific directories: `gsum src/api`
    - Using `--focus` to limit scope: `gsum --focus frontend`
+   
+4. **Quick workaround for timeouts**:
+   ```bash
+   # Use minimal context level for faster generation
+   gsum save --context-level minimal
+   
+   # Or use standard instead of comprehensive
+   gsum save --context-level standard
+   ```
 
 ### No Progress Visible
 

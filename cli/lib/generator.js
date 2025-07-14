@@ -21,14 +21,25 @@ class SummaryGenerator {
     const fullOutputPath = path.join(targetDir, outputFile);
     
     // Auto-enable verbose mode when running through Claude Code
-    if (process.env.CLAUDE_CODE || process.env.CLAUDE_DESKTOP_TOOLS_ACTIVE) {
+    const isClaudeCode = process.env.CLAUDE_CODE || process.env.CLAUDE_DESKTOP_TOOLS_ACTIVE;
+    if (isClaudeCode) {
       global.verbose = true;
       global.log('🤖 Detected Claude Code environment - enabling verbose mode', 'info');
     }
     
     // Determine context level
-    const contextLevel = options.contextLevel || 
-      (mode === 'save' ? 'comprehensive' : 'standard');
+    let contextLevel = options.contextLevel;
+    if (!contextLevel) {
+      if (mode === 'ephemeral' && isClaudeCode) {
+        // Use minimal for ephemeral in Claude Code to avoid 2-minute timeout
+        contextLevel = 'minimal';
+        global.log('📉 Using minimal context level for Claude Code (faster generation)', 'info');
+      } else if (mode === 'save') {
+        contextLevel = 'comprehensive';
+      } else {
+        contextLevel = 'standard';
+      }
+    }
     
     // Log focus area if specified
     if (options.focus && global.verbose) {
@@ -88,7 +99,14 @@ class SummaryGenerator {
     // Generate the summary
     let summary;
     try {
-      summary = await this.generateWithGemini(projectInfo, mode, contextLevel);
+      if (options.claudeOnly) {
+        if (global.verbose) {
+          global.log('🤖 Using Claude-only mode (no external API calls)', 'info');
+        }
+        summary = await this.generateWithClaude(projectInfo, mode, contextLevel);
+      } else {
+        summary = await this.generateWithGemini(projectInfo, mode, contextLevel);
+      }
     } catch (error) {
       if (error.message.includes('quota exceeded')) {
         // Offer Claude fallback
@@ -516,6 +534,84 @@ IMPORTANT:
       default:
         return 'ARCHITECTURE.gsum.md';
     }
+  }
+  
+  async generateWithClaude(projectInfo, mode, contextLevel) {
+    const outputFile = this.determineOutputFile(mode, this.options);
+    const prompt = this.buildClaudePrompt(projectInfo, mode, contextLevel);
+    
+    if (global.debug) {
+      global.log('Generating summary directly (Claude-only mode)...', 'debug');
+    }
+    
+    // Create placeholder file
+    const fullPath = path.join(projectInfo.path, outputFile);
+    const placeholder = `# Project Analysis for Claude\n\n${prompt}\n\n---\n\n*Claude should replace this entire file with the ${mode === 'plan' ? 'implementation plan' : 'architecture summary'}.*`;
+    await fs.writeFile(fullPath, placeholder);
+    
+    // Output instructions
+    console.log('\n📋 Project Analysis Complete!');
+    console.log(`📊 ${projectInfo.fileCount} files analyzed`);
+    console.log(`🔧 Tech Stack: ${projectInfo.techStack.join(', ')}`);
+    console.log(`📐 Context Level: ${contextLevel}`);
+    console.log(`\n📁 Created: ${outputFile}`);
+    console.log('\n🤖 Claude: Please read the file and generate the summary by replacing its contents.');
+    
+    // For ephemeral/plan modes, return content for display
+    if (mode === 'ephemeral' || mode === 'plan') {
+      return placeholder;
+    }
+    
+    return fullPath;
+  }
+  
+  buildClaudePrompt(projectInfo, mode, contextLevel) {
+    // For Claude-only mode, we output the project info in a structured way
+    let prompt = `Project: ${projectInfo.name}\n`;
+    prompt += `Path: ${projectInfo.path}\n`;
+    prompt += `Tech Stack: ${projectInfo.techStack.join(', ')}\n`;
+    prompt += `Architecture: ${projectInfo.architecture}\n`;
+    prompt += `Total Files: ${projectInfo.fileCount}\n`;
+    
+    if (projectInfo.packageInfo) {
+      prompt += `\nPackage Info:\n`;
+      prompt += `- Name: ${projectInfo.packageInfo.name}\n`;
+      prompt += `- Version: ${projectInfo.packageInfo.version}\n`;
+      prompt += `- Dependencies: ${Object.keys(projectInfo.packageInfo.dependencies || {}).length} prod, ${Object.keys(projectInfo.packageInfo.devDependencies || {}).length} dev\n`;
+    }
+    
+    if (projectInfo.gitInfo) {
+      prompt += `\nGit Info:\n`;
+      prompt += `- Branch: ${projectInfo.gitInfo.branch}\n`;
+      prompt += `- Remote: ${projectInfo.gitInfo.remote}\n`;
+    }
+    
+    prompt += `\nFile Breakdown:\n`;
+    Object.entries(projectInfo.extensions).forEach(([ext, count]) => {
+      if (count > 0) {
+        prompt += `- ${ext}: ${count} files\n`;
+      }
+    });
+    
+    if (projectInfo.smartFiles && projectInfo.smartFiles.contents) {
+      prompt += `\nKey Files (based on importance):\n`;
+      projectInfo.smartFiles.contents.forEach(file => {
+        prompt += `\n### ${file.path}\n`;
+        prompt += '```\n';
+        prompt += file.content;
+        prompt += '\n```\n';
+      });
+    }
+    
+    // Add task-specific instructions
+    if (mode === 'plan') {
+      prompt += `\n\nTask: ${this.options.task}\n`;
+      prompt += `Please create an implementation plan for this task.`;
+    } else {
+      prompt += `\n\nPlease create a ${contextLevel} architecture summary (${this.getTargetWordsForLevel(contextLevel)}).`;
+    }
+    
+    return prompt;
   }
 }
 

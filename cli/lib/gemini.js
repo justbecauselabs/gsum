@@ -100,6 +100,10 @@ class GeminiClient {
 
       // Set timeout (5 minutes default, configurable via env)
       const timeout = parseInt(process.env.GSUM_TIMEOUT || '300000', 10);
+      
+      if (global.verbose || global.debug) {
+        global.log(`⏱️  Timeout set to ${timeout/1000}s (${timeout/60000} minutes)`, 'verbose');
+      }
       let timeoutId;
       let startTime = Date.now();
       let progressInterval;
@@ -110,7 +114,7 @@ class GeminiClient {
             global.log(`⏱️ Timeout reached after ${timeout/1000}s, terminating Gemini...`, 'warn');
           }
           child.kill('SIGTERM');
-          reject(new Error(`Gemini execution timed out after ${timeout/1000} seconds`));
+          reject(new Error(`Gemini execution timed out after ${timeout/1000} seconds. Set GSUM_TIMEOUT env var to increase.`));
         }, timeout);
       }
       
