@@ -13,6 +13,25 @@ Modern codebases are complex. Whether you're:
 
 gsum analyzes your entire codebase and generates comprehensive, AI-powered documentation in seconds.
 
+## Quick Start
+
+```bash
+# Try gsum without installing
+npx gsum
+
+# Install globally
+npm install -g gsum
+
+# Generate summary of current directory
+gsum
+
+# Focus on frontend files
+gsum --focus frontend
+
+# Interactive guided mode
+gsum interactive
+```
+
 ## Features
 
 - 🚀 **Ephemeral Summaries**: Generate fresh summaries on-demand for maximum context
@@ -36,10 +55,20 @@ gsum analyzes your entire codebase and generates comprehensive, AI-powered docum
 
 - Node.js v16 or higher
 - npm
-- Git
+- Git (for git-based installation)
 - Gemini CLI (recommended) - for AI generation
 
-### Quick Install
+### Quick Install (npm)
+
+```bash
+# Global installation
+npm install -g gsum
+
+# Or use without installing
+npx gsum
+```
+
+### Development Install (git)
 
 ```bash
 git clone https://github.com/jhurray/gsum.git
@@ -47,7 +76,7 @@ cd gsum
 make install
 ```
 
-The installer will:
+The git installer will:
 - ✅ Check prerequisites
 - ✅ Install dependencies
 - ✅ Create the gsum executable
@@ -56,7 +85,7 @@ The installer will:
 
 ### Optional: Install Claude Commands
 
-If you use Claude Desktop, install slash commands for seamless integration:
+If you use Claude Desktop and installed via git, add slash commands for seamless integration:
 
 ```bash
 make install-commands
@@ -67,7 +96,7 @@ This enables:
 - `/gsum-save` - Create/update persistent summary
 - `/gsum-plan <task>` - Generate implementation plans
 
-**Note**: Commands are always overwritten on install/update to ensure you have the latest version.
+**Note**: Claude commands are only available with git installation. Commands are always overwritten on install/update to ensure you have the latest version.
 
 ## How It Works
 
@@ -473,8 +502,16 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions.
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run tests: `make test`
+4. Test locally:
+   ```bash
+   make test           # Run test suite
+   npm pack           # Test npm package
+   ```
 5. Submit a pull request
+
+### Distribution
+- **npm users**: `npm install -g gsum` or `npx gsum`
+- **Developers**: `git clone` + `make install` for full development setup
 
 ## License
 
@@ -486,12 +523,24 @@ Created by [jhurray](https://github.com/jhurray)
 
 ## Changelog
 
-### v1.0.0 (Prerelease)
-- Initial release as standalone CLI tool
+### v1.0.0
+- **npm Distribution**: Available via `npm install -g gsum` and `npx gsum`
+- **Smart Context Levels**: Minimal, standard, and comprehensive summaries
+- **Focus Areas**: Target frontend, API, database, testing, deployment, tooling, documentation
+- **Interactive Mode**: Guided configuration for optimal results
+- **Smart File Inclusion**: AI-powered selection of most relevant files
+- **Codebase Fingerprint**: Ultra-compressed project overview
+- **Path-Specific Summaries**: Analyze specific directories
+- **Dual Distribution**: Both npm and git installation methods
+- **Comprehensive Testing**: 51 tests across Node.js 16/18/20
+- **CI/CD Pipeline**: Automated testing and publishing
+- **Full Documentation**: Complete guides and troubleshooting
+
+### Core Features
 - AI-powered codebase analysis and documentation
 - Git-aware intelligent regeneration
 - Support for ephemeral and persistent summaries
 - Implementation planning features
 - Gemini API integration with Claude fallback
 - Self-updating capabilities
-- Claude Desktop slash commands
+- Claude Desktop slash commands (git install only)
