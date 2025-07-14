@@ -17,9 +17,7 @@ class SummaryGenerator {
 
   async generate(targetDir, options = {}) {
     const mode = options.mode || 'ephemeral';
-    const timestamp = Date.now();
-    const outputFile = options.file || 
-      (mode === 'ephemeral' ? `.gsum_temp_${timestamp}.md` : 'ARCHITECTURE.gsum.md');
+    const outputFile = this.determineOutputFile(mode, options);
     const fullOutputPath = path.join(targetDir, outputFile);
     
     // Auto-enable verbose mode when running through Claude Code
@@ -149,15 +147,7 @@ class SummaryGenerator {
   }
 
   async generateWithGemini(projectInfo, mode, contextLevel) {
-    let outputFile;
-    const timestamp = Date.now();
-    if (mode === 'plan') {
-      outputFile = `.gsum_plan_${timestamp}.md`;
-    } else if (mode === 'ephemeral') {
-      outputFile = `.gsum_temp_${timestamp}.md`;
-    } else {
-      outputFile = this.options.file || 'ARCHITECTURE.gsum.md';
-    }
+    const outputFile = this.determineOutputFile(mode, this.options);
     
     const prompt = this.buildPrompt(projectInfo, mode, contextLevel, outputFile);
     
@@ -165,17 +155,15 @@ class SummaryGenerator {
       global.log('Calling Gemini API...', 'debug');
     }
 
-    // Gemini will create the file directly
-    const success = await this.gemini.generate(prompt, projectInfo.path, outputFile);
+    // Gemini will write to the file (or return content)
+    const content = await this.gemini.generate(prompt, projectInfo.path, outputFile);
     
-    if (!success) {
-      throw new Error('Gemini failed to create the summary file');
+    if (!content) {
+      throw new Error('Gemini failed to generate content');
     }
 
-    // Read the file that Gemini created
-    const fullPath = path.join(projectInfo.path, outputFile);
-    const result = await fs.readFile(fullPath, 'utf8');
-    return result;
+    // Content is already in the file, just return it
+    return content;
   }
 
   buildPrompt(projectInfo, mode, contextLevel = 'standard', outputFile = null) {
@@ -277,10 +265,10 @@ Target Length: ${targetWords}
 
 ${projectInfo.smartFiles ? this.buildSmartFilesSection(projectInfo.smartFiles) : ''}
 
-IMPORTANT: You must create a file named "${outputFile}" in the current directory with the architecture documentation.
+IMPORTANT: A file named "${outputFile}" has been created in the current directory for you to write to.
 
 Instructions:
-1. Create a file at path: ${outputFile}
+1. Write your documentation to the existing file: ${outputFile}
 2. Write ONLY the markdown content to this file - no thinking process, no preamble
 3. The file should contain a ${contextLevel === 'minimal' ? 'concise' : contextLevel === 'standard' ? 'balanced' : 'comprehensive'} technical specification (aim for ${targetWords})
 4. ${contextLevel !== 'minimal' ? 'Include actual code examples from the project where relevant' : 'Include only essential code examples'}
@@ -288,6 +276,11 @@ Instructions:
 6. Provide accurate, fact-checked information
 
 DO NOT output the content to stdout. Write it directly to the file: ${outputFile}
+
+IMPORTANT FALLBACK: If you cannot write to the file, then output the content to stdout with the following format:
+--- BEGIN GSUM OUTPUT ---
+[Your complete markdown documentation here]
+--- END GSUM OUTPUT ---
 
 REMEMBER: This is optimized for ${contextLevel === 'minimal' ? 'quick context with minimal tokens' : contextLevel === 'standard' ? 'balanced context for AI assistants' : 'complete documentation'}.`;
   }
@@ -298,7 +291,7 @@ REMEMBER: This is optimized for ${contextLevel === 'minimal' ? 'quick context wi
     
     return `You are a senior software engineer tasked with creating an implementation plan.
 
-IMPORTANT: You must create a file named "${outputFile}" in the current directory with the implementation plan.
+IMPORTANT: A file named "${outputFile}" has been created in the current directory for you to write to.
 
 Project Information:
 - Name: ${projectInfo.name}
@@ -310,7 +303,7 @@ Task: ${task}
 ${projectInfo.smartFiles ? `The following files have been identified as most relevant to this task:\n${projectInfo.smartFiles.selected.join('\n')}\n` : ''}
 
 Instructions:
-1. Create a file at path: ${outputFile}
+1. Write to the existing file at path: ${outputFile}
 2. Write ONLY the implementation plan to this file
 3. The plan should include:
    - Overview of the approach
@@ -322,6 +315,11 @@ Instructions:
    - Verification steps to ensure correctness
 
 DO NOT output the content to stdout. Write it directly to the file: ${outputFile}
+
+IMPORTANT FALLBACK: If you cannot write to the file, then output the content to stdout with the following format:
+--- BEGIN GSUM OUTPUT ---
+[Your complete implementation plan here]
+--- END GSUM OUTPUT ---
 
 IMPORTANT: 
 - Make the plan clear, thoughtful, and fact-checked
@@ -501,6 +499,23 @@ IMPORTANT:
     }
     
     return section;
+  }
+  
+  determineOutputFile(mode, options) {
+    if (options.file) {
+      return options.file;
+    }
+    
+    const timestamp = Date.now();
+    switch (mode) {
+      case 'plan':
+        return `.gsum_plan_${timestamp}.md`;
+      case 'ephemeral':
+        return `.gsum_temp_${timestamp}.md`;
+      case 'save':
+      default:
+        return 'ARCHITECTURE.gsum.md';
+    }
   }
 }
 

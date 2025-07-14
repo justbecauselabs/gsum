@@ -17,17 +17,21 @@ class GeminiClient {
   }
 
   async generate(prompt, targetDir, outputFile) {
+    const tempOutput = path.join(os.tmpdir(), `gsum-output-${Date.now()}.txt`);
     const tempError = path.join(os.tmpdir(), `gsum-error-${Date.now()}.txt`);
     const expectedFile = path.join(targetDir, outputFile);
 
     try {
-      if (global.debug) {
-        global.log(`Calling Gemini in directory: ${targetDir}`, 'debug');
-        global.log(`Expecting output file: ${expectedFile}`, 'debug');
+      if (global.debug || global.verbose) {
+        global.log(`Calling Gemini in directory: ${targetDir}`, 'verbose');
+        global.log(`Creating file for Gemini to write to: ${expectedFile}`, 'verbose');
       }
 
+      // Create an empty file for Gemini to write to
+      await fs.writeFile(expectedFile, '');
+
       // Execute Gemini with the prompt
-      const result = await this.executeGemini(prompt, targetDir, tempError);
+      const result = await this.executeGemini(prompt, targetDir, tempOutput, tempError);
       
       // Check for errors
       const errorContent = await this.readFile(tempError);
@@ -35,26 +39,53 @@ class GeminiClient {
         await this.handleGeminiError(errorContent);
       }
 
-      // Check if Gemini created the expected file
-      try {
-        await fs.access(expectedFile);
+      // Check if Gemini wrote to the file
+      const fileContent = await fs.readFile(expectedFile, 'utf8');
+      if (fileContent.trim().length > 0) {
         if (global.verbose) {
-          global.log(`✅ Gemini successfully created ${outputFile}`, 'info');
+          global.log(`✅ Gemini successfully wrote to ${outputFile}`, 'info');
         }
-        return true;
-      } catch {
-        throw new Error(`Gemini did not create the expected file: ${outputFile}`);
+        return fileContent;
       }
+      
+      // If file is empty, check stdout for fallback format
+      if (global.verbose) {
+        global.log(`File is empty, checking stdout for fallback content...`, 'verbose');
+      }
+      
+      const stdoutContent = await this.readFile(tempOutput);
+      
+      if (global.debug && stdoutContent) {
+        global.log(`Stdout content length: ${stdoutContent.length} chars`, 'debug');
+        global.log(`First 200 chars: ${stdoutContent.substring(0, 200)}...`, 'debug');
+      }
+      
+      const fallbackContent = this.extractFallbackContent(stdoutContent);
+      
+      if (fallbackContent) {
+        if (global.verbose) {
+          global.log(`Found fallback content (${fallbackContent.length} chars), writing to ${outputFile}`, 'verbose');
+        }
+        await fs.writeFile(expectedFile, fallbackContent);
+        return fallbackContent;
+      }
+      
+      // If no content found, provide more context in error
+      const errorMsg = `Gemini did not generate any content for ${outputFile}`;
+      if (stdoutContent && stdoutContent.length > 0) {
+        throw new Error(`${errorMsg}. Output was: ${stdoutContent.substring(0, 500)}...`);
+      }
+      throw new Error(errorMsg);
     } finally {
-      // Cleanup temp files
-      await this.cleanup(tempError);
+      // Cleanup temp files (but not the expected output file)
+      await this.cleanup(tempOutput, tempError);
     }
   }
 
-  async executeGemini(prompt, targetDir, tempError) {
+  async executeGemini(prompt, targetDir, tempOutput, tempError) {
     return new Promise((resolve, reject) => {
-      // Build the command - let Gemini output to stdout, capture only stderr
-      const cmd = `cd "${targetDir}" && gemini --yolo 2> "${tempError}"`;
+      // Build the command - capture both stdout and stderr
+      const cmd = `cd "${targetDir}" && gemini --yolo > "${tempOutput}" 2> "${tempError}"`;
       
       if (global.verbose || global.debug) {
         global.log(`🚀 Starting Gemini execution...`, 'info');
@@ -174,6 +205,40 @@ class GeminiClient {
         // Ignore cleanup errors
       }
     }
+  }
+  
+  extractFallbackContent(stdout) {
+    if (!stdout) return null;
+    
+    // Look for our fallback markers
+    const startMarker = '--- BEGIN GSUM OUTPUT ---';
+    const endMarker = '--- END GSUM OUTPUT ---';
+    
+    const startIndex = stdout.indexOf(startMarker);
+    const endIndex = stdout.indexOf(endMarker);
+    
+    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+      const content = stdout.substring(
+        startIndex + startMarker.length,
+        endIndex
+      ).trim();
+      
+      if (global.debug) {
+        global.log(`Extracted fallback content: ${content.length} characters`, 'debug');
+      }
+      
+      return content;
+    }
+    
+    // If no markers found, but we have content that looks like markdown, use it
+    if (stdout.includes('# ') && stdout.length > 100) {
+      if (global.verbose) {
+        global.log('No fallback markers found, using raw output', 'verbose');
+      }
+      return stdout.trim();
+    }
+    
+    return null;
   }
 
 }

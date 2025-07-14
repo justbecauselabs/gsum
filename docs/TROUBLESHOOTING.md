@@ -250,6 +250,63 @@ This is expected behavior. Use `--force` to override:
 gsum save --force
 ```
 
+### "gsum plan" Fails
+
+If `gsum plan` fails with "Gemini did not generate any content":
+
+1. **Ensure your task is properly quoted**:
+   ```bash
+   gsum plan "implement user authentication"  # Good
+   gsum plan implement user authentication    # Bad - only "implement" is used
+   ```
+
+2. **Try with verbose mode**:
+   ```bash
+   gsum plan -v "your task here"
+   ```
+
+3. **Use a context file for complex tasks**:
+   ```bash
+   echo "Detailed requirements here" > context.md
+   gsum plan -c context.md "implement feature X"
+   ```
+
+4. **Check if the issue is with file creation**:
+   ```bash
+   ls -la .gsum_plan_*.md  # Check for any plan files
+   ```
+
+### "Gemini did not create the expected file"
+
+If you see this error after Gemini runs successfully:
+
+1. **Enable debug mode to see what's happening**:
+   ```bash
+   gsum save -d
+   ```
+
+2. **Check if Gemini is creating files with a different name**:
+   ```bash
+   ls -la *.md | grep -E "(ARCH|gsum|GSUM)"
+   ```
+
+3. **Verify Gemini has write permissions**:
+   ```bash
+   touch test.md && rm test.md
+   ```
+
+4. **Try running Gemini directly** to see its output:
+   ```bash
+   cd /path/to/project
+   gemini --yolo
+   # Then paste a simple prompt like: Create a file called test.md with the content "Hello World"
+   ```
+
+5. **Check if the prompt is being passed correctly**:
+   ```bash
+   gsum save -d 2>&1 | grep "Output filename in prompt"
+   ```
+
 ## Getting Help
 
 1. **Check version**:
