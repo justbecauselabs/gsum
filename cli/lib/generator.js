@@ -590,19 +590,35 @@ IMPORTANT:
       prompt += `- Remote: ${projectInfo.gitInfo.remote}\n`;
     }
     
-    // File count info
-    prompt += `\nProject Structure:\n`;
-    if (projectInfo.structure) {
-      const countFiles = (structure) => {
-        let count = 0;
-        Object.values(structure).forEach(item => {
-          if (item.type === 'file') count++;
-          else if (item.children) count += countFiles(item.children);
+    // Project structure info
+    if (projectInfo.structure && Object.keys(projectInfo.structure).length > 0) {
+      prompt += `\nProject Structure:\n`;
+      Object.keys(projectInfo.structure).slice(0, 10).forEach(key => {
+        const item = projectInfo.structure[key];
+        prompt += `- ${key} (${item.type})\n`;
+      });
+      if (Object.keys(projectInfo.structure).length > 10) {
+        prompt += `... and ${Object.keys(projectInfo.structure).length - 10} more items\n`;
+      }
+    }
+    
+    // Key imports/dependencies if available
+    if (projectInfo.imports && Object.keys(projectInfo.imports).length > 0) {
+      prompt += `\nKey Import Patterns:\n`;
+      const importCounts = {};
+      Object.values(projectInfo.imports).forEach(imports => {
+        imports.forEach(imp => {
+          if (!imp.startsWith('.')) { // External imports
+            importCounts[imp] = (importCounts[imp] || 0) + 1;
+          }
         });
-        return count;
-      };
-      const topLevelDirs = Object.keys(projectInfo.structure).filter(k => projectInfo.structure[k].type === 'directory');
-      prompt += `- Top-level directories: ${topLevelDirs.join(', ') || 'none'}\n`;
+      });
+      const topImports = Object.entries(importCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 8);
+      topImports.forEach(([imp, count]) => {
+        prompt += `- ${imp}: used ${count} times\n`;
+      });
     }
     
     if (projectInfo.smartFiles && projectInfo.smartFiles.contents) {
@@ -618,9 +634,18 @@ IMPORTANT:
     // Add task-specific instructions
     if (mode === 'plan') {
       prompt += `\n\nTask: ${this.options.task}\n`;
-      prompt += `Please create an implementation plan for this task.`;
+      prompt += `\nPlease create a detailed implementation plan with:\n`;
+      prompt += `- Step-by-step approach\n`;
+      prompt += `- Files to modify/create\n`;
+      prompt += `- Code examples\n`;
+      prompt += `- Testing strategy\n`;
     } else {
-      prompt += `\n\nPlease create a ${contextLevel} architecture summary (${this.getTargetWordsForLevel(contextLevel)}).`;
+      const sections = this.getSectionsForLevel(contextLevel);
+      prompt += `\n\nPlease create a ${contextLevel} architecture summary (${this.getTargetWordsForLevel(contextLevel)}) with these sections:\n`;
+      sections.forEach(section => {
+        prompt += `- ${section}\n`;
+      });
+      prompt += `\nFocus on the actual codebase structure, key modules, and how they work together.`;
     }
     
     return prompt;
