@@ -70,7 +70,7 @@ async function runUpdate(options) {
     console.log('\n✅ gsum has been successfully updated!\n');
     
     // Show version
-    const version = require('../package.json').version;
+    const version = require('../../package.json').version;
     console.log(`Current version: ${version}`);
     
   } catch (error) {

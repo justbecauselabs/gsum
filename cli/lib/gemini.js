@@ -61,23 +61,68 @@ class GeminiClient {
       // Build the command
       const cmd = `cd "${targetDir}" && gemini --yolo > "${tempOutput}" 2> "${tempError}"`;
       
+      if (global.verbose || global.debug) {
+        global.log(`🚀 Starting Gemini execution...`, 'info');
+        global.log(`📍 Working directory: ${targetDir}`, 'verbose');
+        global.log(`📝 Prompt length: ${prompt.length} characters`, 'verbose');
+      }
+      
       // Execute with heredoc
       const child = require('child_process').spawn('bash', ['-c', cmd], {
         stdio: ['pipe', 'pipe', 'pipe']
       });
+
+      // Set timeout (5 minutes default, configurable via env)
+      const timeout = parseInt(process.env.GSUM_TIMEOUT || '300000', 10);
+      let timeoutId;
+      let startTime = Date.now();
+      let progressInterval;
+      
+      if (timeout > 0) {
+        timeoutId = setTimeout(() => {
+          if (global.verbose || global.debug) {
+            global.log(`⏱️ Timeout reached after ${timeout/1000}s, terminating Gemini...`, 'warn');
+          }
+          child.kill('SIGTERM');
+          reject(new Error(`Gemini execution timed out after ${timeout/1000} seconds`));
+        }, timeout);
+      }
+      
+      // Progress indicator
+      if (global.verbose || global.debug) {
+        let dots = 0;
+        progressInterval = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          const dotStr = '.'.repeat((dots % 4) + 1).padEnd(4, ' ');
+          process.stderr.write(`\r⏳ Gemini is processing${dotStr} (${elapsed}s)`);
+          dots++;
+        }, 500);
+      }
 
       // Send the prompt via stdin
       child.stdin.write(prompt);
       child.stdin.end();
 
       child.on('close', (code) => {
-        if (global.debug) {
-          global.log(`Gemini exited with code: ${code}`, 'debug');
+        if (timeoutId) clearTimeout(timeoutId);
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          process.stderr.write('\r' + ' '.repeat(50) + '\r'); // Clear progress line
+        }
+        
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        if (global.verbose || global.debug) {
+          global.log(`✅ Gemini completed in ${elapsed}s with code: ${code}`, 'info');
         }
         resolve(code);
       });
 
       child.on('error', (error) => {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          process.stderr.write('\r' + ' '.repeat(50) + '\r');
+        }
         reject(error);
       });
     });

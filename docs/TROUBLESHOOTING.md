@@ -150,6 +150,45 @@ For large codebases:
    gsum -v | grep "Analyzing"
    ```
 
+### Command Times Out
+
+If gsum times out during AI generation:
+
+1. **Increase timeout** (default is 5 minutes):
+   ```bash
+   export GSUM_TIMEOUT=600000  # 10 minutes in milliseconds
+   gsum save
+   ```
+
+2. **Enable verbose mode** to see progress:
+   ```bash
+   gsum -v
+   # Shows real-time progress like: ⏳ Gemini is processing.... (45s)
+   ```
+
+3. **For very large codebases**, consider:
+   - Using `--context-level minimal` for faster generation
+   - Focusing on specific directories: `gsum src/api`
+   - Using `--focus` to limit scope: `gsum --focus frontend`
+
+### No Progress Visible
+
+If you don't see progress indicators:
+
+1. **In Claude Code**: gsum auto-detects Claude Code and enables verbose mode
+   ```bash
+   # Check if Claude Code is detected
+   echo $CLAUDE_CODE
+   echo $CLAUDE_DESKTOP_TOOLS_ACTIVE
+   ```
+
+2. **Manual verbose mode**:
+   ```bash
+   gsum -v  # or --verbose
+   ```
+
+3. **Check terminal compatibility**: Progress indicators use ANSI escape codes
+
 ## Update Issues
 
 ### Update Command Fails

@@ -180,6 +180,37 @@ gsum --fallback
 gsum --claude-execute
 ```
 
+### Progress & Timeout Features 🏃‍♂️
+
+gsum now provides better visibility and control when running AI operations:
+
+```bash
+# Auto-verbose mode in Claude Code
+# When running through Claude Code, gsum automatically enables verbose mode
+
+# Set custom timeout (default: 5 minutes)
+export GSUM_TIMEOUT=600000  # 10 minutes in milliseconds
+gsum save
+
+# Verbose mode shows:
+# - 🚀 Execution start with working directory
+# - 📝 Prompt length information
+# - ⏳ Real-time progress with elapsed time
+# - ✅ Completion status
+# - ⏱️ Timeout warnings if exceeded
+```
+
+**Progress indicators** show animated dots with elapsed time:
+```
+⏳ Gemini is processing.... (45s)
+```
+
+**Benefits:**
+- No more hanging processes
+- Clear visibility of what's happening
+- Configurable timeouts for long operations
+- Automatic verbose mode in AI assistants
+
 ### Context Levels 🎯
 
 Control the depth and detail of generated summaries:
@@ -495,6 +526,17 @@ $ gsum llm-usage
 - Check git status: `git status`
 - Use `gsum save --force` to force update
 
+**Command times out**
+- Default timeout is 5 minutes
+- Increase timeout: `export GSUM_TIMEOUT=600000` (10 minutes)
+- Enable verbose mode to see progress: `gsum -v`
+- Large codebases may need longer timeouts
+
+**No progress visible in Claude Code**
+- gsum auto-detects Claude Code and enables verbose mode
+- If not working, manually use: `gsum -v`
+- Check for environment variable: `echo $CLAUDE_CODE`
+
 See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for detailed solutions.
 
 ## Contributing
@@ -522,6 +564,14 @@ MIT License - see LICENSE file for details.
 Created by [jhurray](https://github.com/jhurray)
 
 ## Changelog
+
+### v0.1.1 (Latest)
+- **Progress Indicators**: Real-time progress with elapsed time during AI operations
+- **Configurable Timeouts**: Default 5-minute timeout, customizable via `GSUM_TIMEOUT` env var
+- **Claude Code Integration**: Auto-detects Claude Code environment and enables verbose mode
+- **Enhanced Logging**: Emoji-based status messages for better visibility
+- **Real-time Output**: Shows AI output as it's generated in verbose mode
+- **Better Error Handling**: Clear timeout messages and graceful process termination
 
 ### v0.1.0
 - **npm Distribution**: Available via `npm install -g gsum` and `npx gsum`

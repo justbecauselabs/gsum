@@ -20,6 +20,12 @@ class SummaryGenerator {
     const outputFile = options.file || 'ARCHITECTURE.gsum.md';
     const fullOutputPath = path.join(targetDir, outputFile);
     
+    // Auto-enable verbose mode when running through Claude Code
+    if (process.env.CLAUDE_CODE || process.env.CLAUDE_DESKTOP_TOOLS_ACTIVE) {
+      global.verbose = true;
+      global.log('🤖 Detected Claude Code environment - enabling verbose mode', 'info');
+    }
+    
     // Determine context level
     const contextLevel = options.contextLevel || 
       (mode === 'save' ? 'comprehensive' : 'standard');
@@ -30,7 +36,8 @@ class SummaryGenerator {
     }
 
     if (global.verbose) {
-      global.log(`Generating ${mode} summary for ${targetDir}`, 'verbose');
+      global.log(`📋 Generating ${mode} summary for ${targetDir}`, 'info');
+      global.log(`📊 Context level: ${contextLevel}`, 'verbose');
     }
 
     // Check if we should regenerate (for save mode)
@@ -45,10 +52,21 @@ class SummaryGenerator {
     }
 
     // Analyze the project
+    if (global.verbose) {
+      global.log('🔍 Analyzing project structure...', 'info');
+    }
     const projectInfo = await this.analyzer.analyze(targetDir);
+    
+    if (global.verbose) {
+      global.log(`✅ Analysis complete: ${projectInfo.fileCount} files, ${projectInfo.techStack.join(', ')}`, 'info');
+    }
     
     // Smart file selection if requested
     if (options.smartFiles) {
+      if (global.verbose) {
+        global.log(`🧠 Selecting ${options.smartFiles} most relevant files...`, 'info');
+      }
+      
       const selector = new SmartFileSelector({
         smartFiles: options.smartFiles,
         projectPath: targetDir
@@ -63,7 +81,7 @@ class SummaryGenerator {
       };
       
       if (global.verbose) {
-        global.log(`Smart file selection included ${selectedFiles.length} files`, 'verbose');
+        global.log(`✅ Smart file selection included ${selectedFiles.length} files`, 'info');
       }
     }
 

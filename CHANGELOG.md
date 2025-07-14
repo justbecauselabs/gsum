@@ -5,6 +5,37 @@ All notable changes to gsum-cli will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2025-07-14
+
+### Added
+- **Progress Indicators**: Real-time progress display with elapsed time during AI operations
+  - Shows animated dots: `⏳ Gemini is processing.... (45s)`
+  - Clear visibility of operation status
+- **Configurable Timeouts**: Prevent hanging processes
+  - Default 5-minute timeout
+  - Customizable via `GSUM_TIMEOUT` environment variable (milliseconds)
+  - Graceful termination with clear error messages
+- **Claude Code Integration**: Enhanced AI assistant experience
+  - Auto-detects Claude Code environment (`CLAUDE_CODE`, `CLAUDE_DESKTOP_TOOLS_ACTIVE`)
+  - Automatically enables verbose mode for better visibility
+- **Enhanced Logging**: Improved status messages with emojis
+  - 🚀 Starting execution
+  - 📍 Working directory info
+  - 🔍 Analysis progress
+  - ✅ Completion status
+  - ⏱️ Timeout warnings
+- **Real-time Output**: Shows AI output as it's generated in verbose mode
+
+### Changed
+- Switched from `execSync` to `spawn` for better process control in gemini.js and claude.js
+- Improved error handling with specific timeout errors
+- Better verbose output throughout the generation pipeline
+
+### Fixed
+- Fixed timeout issues when running through Claude Code
+- Fixed hanging processes during Gemini/Claude execution
+- Improved process cleanup on errors or timeouts
+
 ## [0.1.0] - 2025-07-13
 
 ### Added
