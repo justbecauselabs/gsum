@@ -544,25 +544,22 @@ IMPORTANT:
       global.log('Generating summary directly (Claude-only mode)...', 'debug');
     }
     
-    // Create analysis file
-    const fullPath = path.join(projectInfo.path, outputFile);
-    const content = `# ${mode === 'plan' ? 'Implementation Plan' : 'Architecture Summary'}\n\n${prompt}`;
-    await fs.writeFile(fullPath, content);
-    
-    // Output instructions
+    // Output the analysis for Claude to process
     console.log('\n📋 Project Analysis Complete!');
     console.log(`📊 ${projectInfo.fileCount} files analyzed`);
     console.log(`🔧 Tech Stack: ${projectInfo.techStack.join(', ')}`);
     console.log(`📐 Context Level: ${contextLevel}`);
-    console.log(`\n📁 Created: ${outputFile}`);
-    console.log('\n🤖 Claude: Please read the file and generate the summary by replacing its contents.');
+    console.log(`\n--- PROJECT ANALYSIS ---\n`);
+    console.log(prompt);
+    console.log('\n--- END ANALYSIS ---\n');
     
-    // For ephemeral/plan modes, return content for display
-    if (mode === 'ephemeral' || mode === 'plan') {
-      return content;
-    }
+    const fullPath = path.join(projectInfo.path, outputFile);
+    console.log(`🤖 Claude: Please generate the ${mode === 'plan' ? 'implementation plan' : 'architecture summary'} and save it to: ${outputFile}`);
     
-    return fullPath;
+    // Return instructions for what Claude should do
+    const instructions = `Please create a ${mode === 'plan' ? 'detailed implementation plan' : `comprehensive ${contextLevel} architecture summary`} based on the analysis above and save it to the file: ${outputFile}\n\nThe file should contain the complete ${mode === 'plan' ? 'plan' : 'summary'}, not just analysis data.`;
+    
+    return instructions;
   }
   
   buildClaudePrompt(projectInfo, mode, contextLevel) {
