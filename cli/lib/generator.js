@@ -544,10 +544,10 @@ IMPORTANT:
       global.log('Generating summary directly (Claude-only mode)...', 'debug');
     }
     
-    // Create placeholder file
+    // Create analysis file
     const fullPath = path.join(projectInfo.path, outputFile);
-    const placeholder = `# Project Analysis for Claude\n\n${prompt}\n\n---\n\n*Claude should replace this entire file with the ${mode === 'plan' ? 'implementation plan' : 'architecture summary'}.*`;
-    await fs.writeFile(fullPath, placeholder);
+    const content = `# ${mode === 'plan' ? 'Implementation Plan' : 'Architecture Summary'}\n\n${prompt}`;
+    await fs.writeFile(fullPath, content);
     
     // Output instructions
     console.log('\n📋 Project Analysis Complete!');
@@ -559,7 +559,7 @@ IMPORTANT:
     
     // For ephemeral/plan modes, return content for display
     if (mode === 'ephemeral' || mode === 'plan') {
-      return placeholder;
+      return content;
     }
     
     return fullPath;
@@ -595,7 +595,8 @@ IMPORTANT:
       prompt += `\nProject Structure:\n`;
       Object.keys(projectInfo.structure).slice(0, 10).forEach(key => {
         const item = projectInfo.structure[key];
-        prompt += `- ${key} (${item.type})\n`;
+        const type = item && item.type ? item.type : (key.includes('.') ? 'file' : 'directory');
+        prompt += `- ${key} (${type})\n`;
       });
       if (Object.keys(projectInfo.structure).length > 10) {
         prompt += `... and ${Object.keys(projectInfo.structure).length - 10} more items\n`;
