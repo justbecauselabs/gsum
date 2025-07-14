@@ -17,7 +17,7 @@ class SummaryGenerator {
 
   async generate(targetDir, options = {}) {
     const mode = options.mode || 'ephemeral';
-    const outputFile = options.file || 'ARCHITECTURE.gsum.md';
+    const outputFile = options.file || (mode === 'ephemeral' ? 'GSUM_EPHEMERAL.md' : 'ARCHITECTURE.gsum.md');
     const fullOutputPath = path.join(targetDir, outputFile);
     
     // Auto-enable verbose mode when running through Claude Code
@@ -123,10 +123,11 @@ class SummaryGenerator {
 
     // Handle output based on mode
     if (mode === 'ephemeral') {
+      // Print the file content and delete it
       console.log(summary);
+      await fs.unlink(fullOutputPath);
       return summary;
     } else if (mode === 'save') {
-      await fs.writeFile(fullOutputPath, summary);
       console.log(`✅ Summary saved to ${outputFile}`);
       
       // Add git hash if in a git repo
@@ -138,37 +139,52 @@ class SummaryGenerator {
       
       return fullOutputPath;
     } else if (mode === 'plan') {
+      // For plan mode, also print and delete
       console.log(summary);
+      await fs.unlink(fullOutputPath);
       return summary;
     }
   }
 
   async generateWithGemini(projectInfo, mode, contextLevel) {
-    const prompt = this.buildPrompt(projectInfo, mode, contextLevel);
+    let outputFile;
+    if (mode === 'plan') {
+      outputFile = 'GSUM_PLAN.md';
+    } else if (mode === 'ephemeral') {
+      outputFile = 'GSUM_EPHEMERAL.md';
+    } else {
+      outputFile = this.options.file || 'ARCHITECTURE.gsum.md';
+    }
+    
+    const prompt = this.buildPrompt(projectInfo, mode, contextLevel, outputFile);
     
     if (global.debug) {
       global.log('Calling Gemini API...', 'debug');
     }
 
-    const result = await this.gemini.generate(prompt, projectInfo.path);
+    // Gemini will create the file directly
+    const success = await this.gemini.generate(prompt, projectInfo.path, outputFile);
     
-    if (!result || result.trim() === '') {
-      throw new Error('Empty response from Gemini');
+    if (!success) {
+      throw new Error('Gemini failed to create the summary file');
     }
 
+    // Read the file that Gemini created
+    const fullPath = path.join(projectInfo.path, outputFile);
+    const result = await fs.readFile(fullPath, 'utf8');
     return result;
   }
 
-  buildPrompt(projectInfo, mode, contextLevel = 'standard') {
+  buildPrompt(projectInfo, mode, contextLevel = 'standard', outputFile = null) {
     if (mode === 'plan') {
       return this.buildPlanPrompt(projectInfo);
     }
     
-    // Pass context level and focus area to the prompt builder
-    return this.buildSummaryPrompt(projectInfo, contextLevel);
+    // Pass context level, focus area, and output file to the prompt builder
+    return this.buildSummaryPrompt(projectInfo, contextLevel, outputFile);
   }
   
-  buildSummaryPrompt(projectInfo, contextLevel) {
+  buildSummaryPrompt(projectInfo, contextLevel, outputFile) {
     // Define sections based on context level
     const sections = this.getSectionsForLevel(contextLevel);
     const targetWords = this.getTargetWordsForLevel(contextLevel);
@@ -258,20 +274,28 @@ Target Length: ${targetWords}
 
 ${projectInfo.smartFiles ? this.buildSmartFilesSection(projectInfo.smartFiles) : ''}
 
-Based on the project information above, create this architecture-focused technical specification. Make sure to:
-1. Create a ${contextLevel === 'minimal' ? 'concise' : contextLevel === 'standard' ? 'balanced' : 'comprehensive'} document - aim for ${targetWords}
-2. ${contextLevel !== 'minimal' ? 'Include actual code examples from the project where relevant' : 'Include only essential code examples'}
-3. ${contextLevel === 'comprehensive' ? 'Be thorough but focused' : 'Focus on the most important aspects'}
-4. Provide accurate, fact-checked information
-5. Output ONLY the markdown document - no thinking process, no preamble
+IMPORTANT: You must create a file named "${outputFile}" in the current directory with the architecture documentation.
+
+Instructions:
+1. Create a file at path: ${outputFile}
+2. Write ONLY the markdown content to this file - no thinking process, no preamble
+3. The file should contain a ${contextLevel === 'minimal' ? 'concise' : contextLevel === 'standard' ? 'balanced' : 'comprehensive'} technical specification (aim for ${targetWords})
+4. ${contextLevel !== 'minimal' ? 'Include actual code examples from the project where relevant' : 'Include only essential code examples'}
+5. ${contextLevel === 'comprehensive' ? 'Be thorough but focused' : 'Focus on the most important aspects'}
+6. Provide accurate, fact-checked information
+
+DO NOT output the content to stdout. Write it directly to the file: ${outputFile}
 
 REMEMBER: This is optimized for ${contextLevel === 'minimal' ? 'quick context with minimal tokens' : contextLevel === 'standard' ? 'balanced context for AI assistants' : 'complete documentation'}.`;
   }
 
   buildPlanPrompt(projectInfo) {
     const task = this.options.task || 'implement a new feature';
+    const outputFile = 'GSUM_PLAN.md';
     
     return `You are a senior software engineer tasked with creating an implementation plan.
+
+IMPORTANT: You must create a file named "${outputFile}" in the current directory with the implementation plan.
 
 Project Information:
 - Name: ${projectInfo.name}
@@ -282,14 +306,19 @@ Task: ${task}
 
 ${projectInfo.smartFiles ? `The following files have been identified as most relevant to this task:\n${projectInfo.smartFiles.selected.join('\n')}\n` : ''}
 
-Based on the codebase analysis, create a detailed implementation plan that includes:
-1. Overview of the approach
-2. Step-by-step implementation guide with clear, actionable tasks
-3. Files that need to be modified or created (with exact paths)
-4. Code examples for key changes
-5. Testing approach and test cases
-6. Potential challenges and solutions
-7. Verification steps to ensure correctness
+Instructions:
+1. Create a file at path: ${outputFile}
+2. Write ONLY the implementation plan to this file
+3. The plan should include:
+   - Overview of the approach
+   - Step-by-step implementation guide with clear, actionable tasks
+   - Files that need to be modified or created (with exact paths)
+   - Code examples for key changes
+   - Testing approach and test cases
+   - Potential challenges and solutions
+   - Verification steps to ensure correctness
+
+DO NOT output the content to stdout. Write it directly to the file: ${outputFile}
 
 IMPORTANT: 
 - Make the plan clear, thoughtful, and fact-checked

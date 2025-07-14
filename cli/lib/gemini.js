@@ -16,17 +16,18 @@ class GeminiClient {
     }
   }
 
-  async generate(prompt, targetDir) {
-    const tempOutput = path.join(os.tmpdir(), `gsum-output-${Date.now()}.txt`);
+  async generate(prompt, targetDir, outputFile) {
     const tempError = path.join(os.tmpdir(), `gsum-error-${Date.now()}.txt`);
+    const expectedFile = path.join(targetDir, outputFile);
 
     try {
       if (global.debug) {
         global.log(`Calling Gemini in directory: ${targetDir}`, 'debug');
+        global.log(`Expecting output file: ${expectedFile}`, 'debug');
       }
 
       // Execute Gemini with the prompt
-      const result = await this.executeGemini(prompt, targetDir, tempOutput, tempError);
+      const result = await this.executeGemini(prompt, targetDir, tempError);
       
       // Check for errors
       const errorContent = await this.readFile(tempError);
@@ -34,32 +35,26 @@ class GeminiClient {
         await this.handleGeminiError(errorContent);
       }
 
-      // Check for expected output file (DIRECTORY_SUMMARY.md)
-      const summaryPath = path.join(targetDir, 'DIRECTORY_SUMMARY.md');
+      // Check if Gemini created the expected file
       try {
-        const summaryContent = await fs.readFile(summaryPath, 'utf8');
-        // Clean up the generated file
-        await fs.unlink(summaryPath);
-        return this.cleanOutput(summaryContent);
-      } catch {
-        // If no file was created, check stdout
-        const stdoutContent = await this.readFile(tempOutput);
-        if (stdoutContent && stdoutContent.trim()) {
-          return this.cleanOutput(stdoutContent);
+        await fs.access(expectedFile);
+        if (global.verbose) {
+          global.log(`✅ Gemini successfully created ${outputFile}`, 'info');
         }
+        return true;
+      } catch {
+        throw new Error(`Gemini did not create the expected file: ${outputFile}`);
       }
-
-      throw new Error('No output generated from Gemini');
     } finally {
       // Cleanup temp files
-      await this.cleanup(tempOutput, tempError);
+      await this.cleanup(tempError);
     }
   }
 
-  async executeGemini(prompt, targetDir, tempOutput, tempError) {
+  async executeGemini(prompt, targetDir, tempError) {
     return new Promise((resolve, reject) => {
-      // Build the command - redirect MCP stderr to /dev/null
-      const cmd = `cd "${targetDir}" && (gemini --yolo 2>&1 | grep -v 'MCP STDERR' > "${tempOutput}") 2> "${tempError}"`;
+      // Build the command - let Gemini output to stdout, capture only stderr
+      const cmd = `cd "${targetDir}" && gemini --yolo 2> "${tempError}"`;
       
       if (global.verbose || global.debug) {
         global.log(`🚀 Starting Gemini execution...`, 'info');
@@ -181,20 +176,6 @@ class GeminiClient {
     }
   }
 
-  cleanOutput(content) {
-    // Remove MCP stderr messages
-    let cleaned = content.replace(/MCP STDERR.*\n/g, '');
-    
-    // If the content starts with Gemini's thinking process, extract only the markdown
-    // Look for the first markdown header (# PROJECT OVERVIEW or similar)
-    const markdownStart = cleaned.search(/^#\s+[A-Z]/m);
-    if (markdownStart > 0) {
-      // There's text before the markdown - likely Gemini's thinking
-      cleaned = cleaned.substring(markdownStart);
-    }
-    
-    return cleaned.trim();
-  }
 }
 
 module.exports = { GeminiClient };
