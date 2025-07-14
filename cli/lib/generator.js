@@ -600,9 +600,9 @@ IMPORTANT:
       }
     }
     
-    // Key imports/dependencies if available
+    // Most used dependencies/modules
     if (projectInfo.imports && Object.keys(projectInfo.imports).length > 0) {
-      prompt += `\nKey Import Patterns:\n`;
+      prompt += `\nMost Used Dependencies:\n`;
       const importCounts = {};
       Object.values(projectInfo.imports).forEach(imports => {
         imports.forEach(imp => {
