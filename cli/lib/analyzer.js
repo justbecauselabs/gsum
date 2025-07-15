@@ -107,6 +107,10 @@ class ProjectAnalyzer {
     this.verbose = global.verbose || false;
     this.debug = global.debug || false;
     this.focusArea = options.focus || null;
+    // Import graph tracking
+    this.importGraph = new Map(); // file -> Set of imported files
+    this.exportGraph = new Map(); // file -> Set of files that import it
+    this.fileCentrality = new Map(); // file -> centrality score
   }
 
   async analyze(dirPath) {
@@ -144,6 +148,12 @@ class ProjectAnalyzer {
     // Analyze files
     await this.analyzeFiles(dirPath, projectInfo, 0);
 
+    // Build import graph
+    await this.buildImportGraph(projectInfo);
+    
+    // Calculate file centrality scores
+    this.calculateFileCentrality();
+
     // Detect architecture patterns
     projectInfo.architecture = this.detectArchitecture(projectInfo);
 
@@ -151,6 +161,12 @@ class ProjectAnalyzer {
     projectInfo.techStack = Array.from(projectInfo.techStack);
     projectInfo.imports = Object.fromEntries(projectInfo.imports);
     projectInfo.exports = Object.fromEntries(projectInfo.exports);
+    
+    // Add graph data to project info
+    projectInfo.importGraph = Object.fromEntries(
+      Array.from(this.importGraph.entries()).map(([k, v]) => [k, Array.from(v)])
+    );
+    projectInfo.fileCentrality = Object.fromEntries(this.fileCentrality);
 
     const elapsed = Date.now() - startTime;
     if (this.verbose) {
@@ -562,6 +578,152 @@ class ProjectAnalyzer {
     if (fileInfo.exports && fileInfo.exports.length > 0) {
       projectInfo.exports.set(fileInfo.path, fileInfo.exports);
     }
+  }
+
+  async buildImportGraph(projectInfo) {
+    if (this.verbose) {
+      global.log('Building import dependency graph...', 'verbose');
+    }
+
+    // Initialize graph nodes
+    for (const [filePath, imports] of projectInfo.imports.entries()) {
+      if (!this.importGraph.has(filePath)) {
+        this.importGraph.set(filePath, new Set());
+      }
+
+      // Resolve imports to actual file paths
+      for (const importPath of imports) {
+        const resolvedPath = await this.resolveImportPath(filePath, importPath, projectInfo);
+        if (resolvedPath) {
+          // Add edge in import graph
+          this.importGraph.get(filePath).add(resolvedPath);
+          
+          // Add reverse edge in export graph
+          if (!this.exportGraph.has(resolvedPath)) {
+            this.exportGraph.set(resolvedPath, new Set());
+          }
+          this.exportGraph.get(resolvedPath).add(filePath);
+        }
+      }
+    }
+
+    if (this.debug) {
+      global.log(`Import graph built with ${this.importGraph.size} nodes`, 'debug');
+    }
+  }
+
+  async resolveImportPath(fromFile, importPath, projectInfo) {
+    // Skip external modules
+    if (!importPath.startsWith('.') && !importPath.startsWith('/')) {
+      return null;
+    }
+
+    const fromDir = path.dirname(fromFile);
+    let resolvedPath;
+
+    try {
+      // Try direct resolution
+      resolvedPath = path.resolve(fromDir, importPath);
+      
+      // Try common extensions if no extension provided
+      if (!path.extname(resolvedPath)) {
+        const extensions = ['.js', '.jsx', '.ts', '.tsx', '.json'];
+        for (const ext of extensions) {
+          const withExt = resolvedPath + ext;
+          if (projectInfo.imports.has(withExt) || projectInfo.exports.has(withExt)) {
+            return withExt;
+          }
+        }
+        
+        // Try index file
+        const indexPath = path.join(resolvedPath, 'index.js');
+        if (projectInfo.imports.has(indexPath) || projectInfo.exports.has(indexPath)) {
+          return indexPath;
+        }
+      }
+
+      // Check if resolved path exists in our project
+      if (projectInfo.imports.has(resolvedPath) || projectInfo.exports.has(resolvedPath)) {
+        return resolvedPath;
+      }
+    } catch (error) {
+      if (this.debug) {
+        global.log(`Failed to resolve import ${importPath} from ${fromFile}`, 'debug');
+      }
+    }
+
+    return null;
+  }
+
+  calculateFileCentrality() {
+    if (this.verbose) {
+      global.log('Calculating file centrality scores...', 'verbose');
+    }
+
+    // Initialize all files with base score
+    const allFiles = new Set([
+      ...this.importGraph.keys(),
+      ...this.exportGraph.keys()
+    ]);
+
+    for (const file of allFiles) {
+      // Centrality based on:
+      // 1. Number of files that import this file (in-degree)
+      // 2. Number of files this file imports (out-degree)
+      // 3. Betweenness (simplified - files that connect many others)
+      
+      const importedBy = this.exportGraph.get(file)?.size || 0;
+      const importsCount = this.importGraph.get(file)?.size || 0;
+      
+      // Higher weight for being imported (indicates reusability)
+      const centrality = (importedBy * 2) + importsCount;
+      
+      // Bonus for certain file patterns
+      const basename = path.basename(file).toLowerCase();
+      let bonus = 0;
+      
+      if (basename.match(/^(index|main|app|server)/)) {
+        bonus += 5; // Entry points
+      }
+      if (file.includes('/utils/') || file.includes('/helpers/')) {
+        bonus += 3; // Utility files tend to be central
+      }
+      if (file.includes('/config/') || basename.includes('config')) {
+        bonus += 3; // Configuration files
+      }
+      
+      this.fileCentrality.set(file, centrality + bonus);
+    }
+
+    // Normalize scores to 0-100 range
+    const maxScore = Math.max(...this.fileCentrality.values());
+    if (maxScore > 0) {
+      for (const [file, score] of this.fileCentrality.entries()) {
+        this.fileCentrality.set(file, Math.round((score / maxScore) * 100));
+      }
+    }
+
+    if (this.verbose) {
+      const topFiles = Array.from(this.fileCentrality.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+      global.log('Top 5 central files:', 'verbose');
+      for (const [file, score] of topFiles) {
+        global.log(`  ${path.basename(file)}: ${score}`, 'verbose');
+      }
+    }
+  }
+
+  getFileCentralityScore(filePath) {
+    return this.fileCentrality.get(filePath) || 0;
+  }
+
+  getImportedBy(filePath) {
+    return Array.from(this.exportGraph.get(filePath) || []);
+  }
+
+  getImports(filePath) {
+    return Array.from(this.importGraph.get(filePath) || []);
   }
 }
 

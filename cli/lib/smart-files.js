@@ -34,9 +34,13 @@ class SmartFileSelector {
       const complexity = await this.calculateComplexity(file);
       score += complexity * 5;
       
-      // 4. Centrality (files in key directories)
-      const centrality = this.calculateCentrality(file);
-      score += centrality * 8;
+      // 4. Graph centrality (from import graph analysis)
+      const graphCentrality = projectInfo.fileCentrality ? (projectInfo.fileCentrality[file] || 0) : 0;
+      score += graphCentrality * 0.5; // Already normalized to 0-100
+      
+      // 5. Directory centrality (files in key directories)
+      const dirCentrality = this.calculateCentrality(file);
+      score += dirCentrality * 8;
       
       // 5. File type importance
       const typeScore = this.getFileTypeScore(file);
