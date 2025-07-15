@@ -68,6 +68,7 @@ program
   .option('--fallback', 'generate Claude fallback prompt on Gemini quota error')
   .option('--claude-execute', 'try to execute with Claude CLI on Gemini quota error')
   .option('--claude-only', 'generate summary directly without using Gemini (works in Claude Code)')
+  .option('--claude-optimized', 'generate token-optimized context for Claude Code (auto-enabled in Claude)')
   .action(async (path, options) => {
     try {
       // Validate context level
@@ -107,6 +108,7 @@ program
   .option('--focus <area>', 'focus on specific area: frontend, api, database, testing, deployment, tooling, documentation')
   .option('--smart-files <n>', 'include N most relevant files based on git/import analysis', parseInt)
   .option('--claude-only', 'generate summary directly without using Gemini (works in Claude Code)')
+  .option('--claude-optimized', 'also generate Claude-optimized context cache in .gsum/')
   .action(async (path, options) => {
     try {
       // Validate context level

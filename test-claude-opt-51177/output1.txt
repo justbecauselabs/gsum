@@ -1,0 +1,13 @@
+## ARCHITECTURE: Express.js/JavaScript Backend
+
+## KEY FILES FOR DEVELOPMENT
+- `src/server.js` - Implementation file
+- `src/index.js` - Implementation file
+
+## COMMON PATTERNS
+
+## TO ADD NEW FEATURE
+1. Create route handler in `routes/`
+2. Add controller logic in `controllers/`
+3. Update model if data changes
+4. Add validation middleware

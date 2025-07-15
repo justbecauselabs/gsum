@@ -1,0 +1,18 @@
+[90mVERBOSE:[0m Running ephemeral summary in /Users/jhurray/src/gsum/test-claude-opt-57399
+[34mINFO:[0m 📋 Generating ephemeral summary for /Users/jhurray/src/gsum/test-claude-opt-57399
+[90mVERBOSE:[0m 📊 Context level: standard
+[90mVERBOSE:[0m Using cached context
+[34mINFO:[0m 📦 Using cached Claude context
+## ARCHITECTURE: Express.js/JavaScript Backend
+
+## KEY FILES FOR DEVELOPMENT
+- `src/index.js` - Implementation file
+- `src/server.js` - Implementation file
+
+## COMMON PATTERNS
+
+## TO ADD NEW FEATURE
+1. Create route handler in `routes/`
+2. Add controller logic in `controllers/`
+3. Update model if data changes
+4. Add validation middleware

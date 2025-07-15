@@ -121,7 +121,7 @@ class SummaryGenerator {
     // Generate the summary
     let summary;
     try {
-      if (claudeOptimized) {
+      if (claudeOptimized && mode === 'ephemeral') {
         if (global.verbose) {
           global.log('🚀 Generating Claude-optimized context', 'info');
         }
@@ -133,6 +133,14 @@ class SummaryGenerator {
         summary = await this.generateWithClaude(projectInfo, mode, contextLevel);
       } else {
         summary = await this.generateWithGemini(projectInfo, mode, contextLevel);
+        
+        // For save mode with Claude optimization, also generate cache
+        if (claudeOptimized && mode === 'save') {
+          if (global.verbose) {
+            global.log('🚀 Also generating Claude-optimized context cache', 'info');
+          }
+          await this.generateClaudeOptimized(projectInfo, mode, contextLevel, options);
+        }
       }
     } catch (error) {
       if (error.message.includes('quota exceeded')) {
