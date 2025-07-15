@@ -6,6 +6,8 @@ const { GeminiClient } = require('./gemini');
 const { ClaudeClient } = require('./claude');
 const { generateFallbackPrompt } = require('./fallback');
 const { SmartFileSelector } = require('./smart-files');
+const { ClaudeOptimizer } = require('./claude-optimizer');
+const { CacheManager } = require('./cache-manager');
 
 class SummaryGenerator {
   constructor(options = {}) {
@@ -13,6 +15,8 @@ class SummaryGenerator {
     this.analyzer = new ProjectAnalyzer(options);
     this.gemini = new GeminiClient();
     this.claude = new ClaudeClient();
+    this.optimizer = new ClaudeOptimizer(options);
+    this.cacheManager = null; // Initialized per directory
   }
 
   async generate(targetDir, options = {}) {
@@ -20,12 +24,18 @@ class SummaryGenerator {
     const outputFile = this.determineOutputFile(mode, options);
     const fullOutputPath = path.join(targetDir, outputFile);
     
+    // Initialize cache manager for this directory
+    this.cacheManager = new CacheManager(targetDir);
+    
     // Auto-enable verbose mode when running through Claude Code
     const isClaudeCode = process.env.CLAUDE_CODE || process.env.CLAUDE_DESKTOP_TOOLS_ACTIVE;
     if (isClaudeCode) {
       global.verbose = true;
       global.log('🤖 Detected Claude Code environment - enabling verbose mode', 'info');
     }
+    
+    // Check for Claude optimization flag
+    const claudeOptimized = options.claudeOptimized || (mode === 'ephemeral' && isClaudeCode);
     
     // Determine context level
     let contextLevel = options.contextLevel;
@@ -51,6 +61,18 @@ class SummaryGenerator {
       global.log(`📊 Context level: ${contextLevel}`, 'verbose');
     }
 
+    // Check cache for Claude-optimized mode
+    if (claudeOptimized && mode === 'ephemeral') {
+      const cached = await this.cacheManager.getContextWithFallback(options);
+      if (cached) {
+        if (global.verbose) {
+          global.log('📦 Using cached Claude context', 'info');
+        }
+        console.log(cached.content);
+        return cached.content;
+      }
+    }
+    
     // Check if we should regenerate (for save mode)
     if (mode === 'save' && !options.force) {
       const git = new GitIntegration(targetDir);
@@ -99,7 +121,12 @@ class SummaryGenerator {
     // Generate the summary
     let summary;
     try {
-      if (options.claudeOnly) {
+      if (claudeOptimized) {
+        if (global.verbose) {
+          global.log('🚀 Generating Claude-optimized context', 'info');
+        }
+        summary = await this.generateClaudeOptimized(projectInfo, mode, contextLevel, options);
+      } else if (options.claudeOnly) {
         if (global.verbose) {
           global.log('🤖 Using Claude-only mode (no external API calls)', 'info');
         }
@@ -141,9 +168,16 @@ class SummaryGenerator {
 
     // Handle output based on mode
     if (mode === 'ephemeral') {
-      // Print the file content and delete it
+      // Print the file content and delete it if it exists
       console.log(summary);
-      await fs.unlink(fullOutputPath);
+      try {
+        await fs.unlink(fullOutputPath);
+      } catch (error) {
+        // File might not exist if using Claude optimization
+        if (error.code !== 'ENOENT') {
+          throw error;
+        }
+      }
       return summary;
     } else if (mode === 'save') {
       console.log(`✅ Summary saved to ${outputFile}`);
@@ -182,6 +216,34 @@ class SummaryGenerator {
 
     // Content is already in the file, just return it
     return content;
+  }
+
+  async generateClaudeOptimized(projectInfo, mode, contextLevel, options) {
+    // Generate optimized content
+    const optimizedContent = this.optimizer.optimizeForClaude(projectInfo, {
+      mode,
+      task: options.task,
+      smartFiles: options.smartFiles
+    });
+    
+    // Cache the content if in ephemeral mode
+    if (mode === 'ephemeral') {
+      await this.cacheManager.saveContext(optimizedContent, {
+        isBaseline: false
+      });
+    }
+    
+    // For save mode, also create the cache file
+    if (mode === 'save') {
+      const cachePath = await this.cacheManager.getCachePath('context.md');
+      await fs.writeFile(cachePath, optimizedContent);
+      
+      if (global.verbose) {
+        global.log(`📦 Claude context cached to .gsum/context.md`, 'info');
+      }
+    }
+    
+    return optimizedContent;
   }
 
   buildPrompt(projectInfo, mode, contextLevel = 'standard', outputFile = null) {
