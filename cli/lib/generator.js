@@ -3,6 +3,7 @@ const path = require('path');
 const { ProjectAnalyzer } = require('./analyzer');
 const { GitIntegration } = require('./git');
 const { GeminiClient } = require('./gemini');
+const { ParallelGeminiClient } = require('./gemini-parallel');
 const { ClaudeClient } = require('./claude');
 const { generateFallbackPrompt } = require('./fallback');
 const { SmartFileSelector } = require('./smart-files');
@@ -14,6 +15,7 @@ class SummaryGenerator {
     this.options = options;
     this.analyzer = new ProjectAnalyzer(options);
     this.gemini = new GeminiClient();
+    this.parallelGemini = new ParallelGeminiClient();
     this.claude = new ClaudeClient();
     this.optimizer = new ClaudeOptimizer(options);
     this.cacheManager = null; // Initialized per directory
@@ -221,21 +223,53 @@ class SummaryGenerator {
   async generateWithGemini(projectInfo, mode, contextLevel) {
     const outputFile = this.determineOutputFile(mode, this.options);
     
-    const prompt = this.buildPrompt(projectInfo, mode, contextLevel, outputFile);
+    // Check if parallel processing is requested and appropriate
+    const useParallel = this.shouldUseParallelProcessing(mode, contextLevel);
     
-    if (global.debug) {
-      global.log('Calling Gemini API...', 'debug');
-    }
+    if (useParallel) {
+      if (global.verbose || global.debug) {
+        global.log('🚀 Using parallel Gemini processing for enhanced Claude context', 'info');
+      }
+      
+      // Use parallel processing for comprehensive analysis
+      const content = await this.parallelGemini.generateParallel(projectInfo, projectInfo.path, outputFile);
+      
+      if (!content) {
+        throw new Error('Parallel Gemini processing failed to generate content');
+      }
+      
+      return content;
+    } else {
+      // Use traditional single-process approach
+      const prompt = this.buildPrompt(projectInfo, mode, contextLevel, outputFile);
+      
+      if (global.debug) {
+        global.log('Calling Gemini API...', 'debug');
+      }
 
-    // Gemini will write to the file (or return content)
-    const content = await this.gemini.generate(prompt, projectInfo.path, outputFile);
+      // Gemini will write to the file (or return content)
+      const content = await this.gemini.generate(prompt, projectInfo.path, outputFile);
+      
+      if (!content) {
+        throw new Error('Gemini failed to generate content');
+      }
+
+      // Content is already in the file, just return it
+      return content;
+    }
+  }
+
+  shouldUseParallelProcessing(mode, contextLevel) {
+    // Use parallel processing for comprehensive mode or when explicitly requested
+    const isComprehensive = contextLevel === 'comprehensive';
+    const isStandard = contextLevel === 'standard';
+    const isParallelRequested = this.options.parallel;
+    const isClaudeCodeEnv = process.env.CLAUDE_CODE || process.env.CLAUDE_DESKTOP_TOOLS_ACTIVE;
     
-    if (!content) {
-      throw new Error('Gemini failed to generate content');
-    }
-
-    // Content is already in the file, just return it
-    return content;
+    // Default: use parallel for comprehensive mode or when running in Claude Code with standard context
+    // This gives Claude much richer context without requiring file access
+    const result = isParallelRequested || isComprehensive || (isClaudeCodeEnv && isStandard);
+    return Boolean(result);
   }
 
   async generateClaudeOptimized(projectInfo, mode, contextLevel, options) {
