@@ -61,12 +61,12 @@ jobs:
           
           ### 🔧 Git Installation
           ```bash
-          git clone https://github.com/jhurray/gsum.git
+          git clone https://github.com/justbecauselabs/gsum.git
           cd gsum && make install
           ```
           
           ### ✨ New in this release
-          See [CHANGELOG.md](https://github.com/jhurray/gsum/blob/main/CHANGELOG.md) for full details.
+          See [CHANGELOG.md](https://github.com/justbecauselabs/gsum/blob/main/CHANGELOG.md) for full details.
           
         draft: false
         prerelease: false

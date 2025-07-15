@@ -151,15 +151,15 @@ publish:
 		exit 1; \
 	fi
 	
-	# Verify authenticated user is jhurray
-	@if [ "$$(npm whoami)" != "jhurray" ]; then \
+	# Verify authenticated user is justbecauselabs
+	@if [ "$$(npm whoami)" != "justbecauselabs" ]; then \
 		echo "❌ Wrong npm user: $$(npm whoami)"; \
-		echo "   Expected: jhurray"; \
+		echo "   Expected: justbecauselabs"; \
 		echo "   Run: npm login"; \
 		exit 1; \
 	fi
 	
-	@echo "✅ Authenticated as jhurray"
+	@echo "✅ Authenticated as justbecauselabs"
 	@echo ""
 	
 	# Run tests first
@@ -199,7 +199,7 @@ publish:
 	@echo "   3. Create GitHub release"
 	@echo ""
 	@echo "🔗 Monitor progress at:"
-	@echo "   https://github.com/jhurray/gsum/actions"
+	@echo "   https://github.com/justbecauselabs/gsum/actions"
 	@echo ""
 	@echo "🎉 Once published, test with: npx gsum@latest --version"
 

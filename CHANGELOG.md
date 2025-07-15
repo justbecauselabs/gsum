@@ -121,7 +121,7 @@ npm install -g gsum
 npx gsum
 
 # Development installation
-git clone https://github.com/jhurray/gsum.git
+git clone https://github.com/justbecauselabs/gsum.git
 cd gsum && make install
 ```
 

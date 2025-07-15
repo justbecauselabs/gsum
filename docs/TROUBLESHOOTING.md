@@ -385,4 +385,4 @@ If you see this error after Gemini runs successfully:
    ```
 
 3. **Report issues**:
-   Visit [github.com/jhurray/gsum/issues](https://github.com/jhurray/gsum/issues)
+   Visit [github.com/justbecauselabs/gsum/issues](https://github.com/justbecauselabs/gsum/issues)

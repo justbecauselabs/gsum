@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # gsum CLI Installer
-# https://github.com/jhurray/gsum
+# https://github.com/justbecauselabs/gsum
 
 set -e
 

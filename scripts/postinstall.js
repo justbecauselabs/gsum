@@ -30,5 +30,5 @@ console.log('  gsum --focus frontend    # Focus on frontend files');
 console.log('  gsum fingerprint         # Quick project overview');
 console.log('  gsum interactive         # Guided mode');
 console.log('');
-console.log('📚 Documentation: https://github.com/jhurray/gsum#readme');
+console.log('📚 Documentation: https://github.com/justbecauselabs/gsum#readme');
 console.log('');

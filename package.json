@@ -50,13 +50,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jhurray/gsum.git"
+    "url": "git+https://github.com/justbecauselabs/gsum.git"
   },
-  "homepage": "https://github.com/jhurray/gsum#readme",
+  "homepage": "https://github.com/justbecauselabs/gsum#readme",
   "bugs": {
-    "url": "https://github.com/jhurray/gsum/issues"
+    "url": "https://github.com/justbecauselabs/gsum/issues"
   },
-  "author": "jhurray",
+  "author": "justbecauselabs",
   "license": "MIT",
   "directories": {
     "lib": "lib",

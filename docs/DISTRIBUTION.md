@@ -76,10 +76,10 @@ npx gsum --help
      ],
      "repository": {
        "type": "git",
-       "url": "https://github.com/jhurray/gsum.git"
+       "url": "https://github.com/justbecauselabs/gsum.git"
      },
-     "homepage": "https://github.com/jhurray/gsum#readme",
-     "bugs": "https://github.com/jhurray/gsum/issues"
+     "homepage": "https://github.com/justbecauselabs/gsum#readme",
+     "bugs": "https://github.com/justbecauselabs/gsum/issues"
    }
    ```
 
@@ -157,13 +157,13 @@ gsum/
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jhurray/gsum.git"
+    "url": "git+https://github.com/justbecauselabs/gsum.git"
   },
-  "homepage": "https://github.com/jhurray/gsum#readme",
+  "homepage": "https://github.com/justbecauselabs/gsum#readme",
   "bugs": {
-    "url": "https://github.com/jhurray/gsum/issues"
+    "url": "https://github.com/justbecauselabs/gsum/issues"
   },
-  "author": "jhurray",
+  "author": "justbecauselabs",
   "license": "MIT"
 }
 ```
@@ -237,7 +237,7 @@ npm install -g gsum
 ### For Developers/Contributors:
 ```bash
 # Development setup
-git clone https://github.com/jhurray/gsum.git
+git clone https://github.com/justbecauselabs/gsum.git
 cd gsum
 make install
 ```

@@ -20,7 +20,7 @@ npm install --save-dev gsum
 
 ### 2. Git Installation (Current method)
 ```bash
-git clone https://github.com/jhurray/gsum.git
+git clone https://github.com/justbecauselabs/gsum.git
 cd gsum && make install
 ```
 
@@ -66,7 +66,7 @@ gsum/
 4. Choose "Automation" type
 5. Copy the token (starts with `npm_`)
 6. Add to GitHub Secrets:
-   - Go to https://github.com/jhurray/gsum/settings/secrets/actions
+   - Go to https://github.com/justbecauselabs/gsum/settings/secrets/actions
    - Click "New repository secret"
    - Name: `NPM_TOKEN`
    - Value: Paste your npm token
@@ -82,7 +82,7 @@ This method patches the version, pushes to CI, and lets GitHub Actions handle th
 make publish
 
 # This will:
-# 1. Verify you're authenticated as jhurray
+# 1. Verify you're authenticated as justbecauselabs
 # 2. Run tests
 # 3. Patch version (increment patch number)
 # 4. Push tag to trigger CI/CD
@@ -247,7 +247,7 @@ npx gsum interactive
 ### As Development Tool
 ```bash
 # Full development setup
-git clone https://github.com/jhurray/gsum.git
+git clone https://github.com/justbecauselabs/gsum.git
 cd gsum && make install
 
 # Modify and test
