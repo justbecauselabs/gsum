@@ -1,6 +1,6 @@
 {
   "name": "gsum",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "AI-powered codebase summarization CLI with smart context optimization",
   "main": "lib/index.js",
   "bin": {
@@ -27,6 +27,7 @@
     "analysis",
     "gemini",
     "claude",
+    "claude-code",
     "developer-tools",
     "smart-context",
     "focus-areas",
@@ -34,7 +35,10 @@
     "fingerprint",
     "code-analysis",
     "documentation",
-    "architecture"
+    "architecture",
+    "import-graph",
+    "cache",
+    "token-optimization"
   ],
   "dependencies": {
     "commander": "^11.1.0",

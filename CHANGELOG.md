@@ -5,6 +5,44 @@ All notable changes to gsum-cli will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-07-15
+
+### Added
+- **Claude Optimization**: Special mode for Claude Code users
+  - Auto-detection of Claude Code environment
+  - Token-efficient output (3k tokens vs 5-7k standard)
+  - `--claude-optimized` flag for manual activation
+- **Smart Caching System**: Incremental context updates
+  - Cache stored in `.gsum/` directory
+  - File-level analysis caching with SHA hashes
+  - Micro/partial/full update strategies based on change impact
+  - Context reuse for instant summaries (< 1 second)
+- **Import Graph Analysis**: Better file selection
+  - Tracks import/export relationships between files
+  - Calculates file centrality scores (0-100)
+  - Prioritizes highly-imported utility files
+- **Enhanced Plan Command**: Task-aware planning
+  - `--smart-files <n>` for task-relevant file inclusion
+  - `--fresh` flag to force new analysis
+  - `--claude-optimized` for token-efficient plans
+  - Cached project analysis for faster generation
+- **Enhanced Save Command**: Dual output mode
+  - Generates both `ARCHITECTURE.gsum.md` and `.gsum/context.md`
+  - Claude context cache creation with `--claude-optimized`
+
+### Changed
+- Analyzer now builds import dependency graphs
+- Generator supports multiple optimization modes
+- Smart file selection uses centrality scores
+- Plan command uses dynamic output filenames
+
+### Technical
+- Added `cache-manager.js` for smart caching logic
+- Added `claude-optimizer.js` for token optimization
+- Enhanced analyzer with import graph capabilities
+- Added comprehensive test suites for new features
+- Total test count increased to 62
+
 ## [0.1.1] - 2025-07-14
 
 ### Added

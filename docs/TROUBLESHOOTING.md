@@ -240,6 +240,59 @@ gsum -d
 gsum -d 2>&1 | tee gsum-debug.log
 ```
 
+## Claude Optimization Issues
+
+### Cache Not Being Used
+
+If Claude optimization isn't using cached context:
+
+1. **Check cache exists**:
+   ```bash
+   ls -la .gsum/
+   cat .gsum/cache-metadata.json
+   ```
+
+2. **Force cache refresh**:
+   ```bash
+   rm -rf .gsum/
+   gsum --claude-optimized
+   ```
+
+3. **Verify Claude Code detection**:
+   ```bash
+   gsum -v | grep "Detected Claude Code"
+   ```
+
+### Wrong Output Format
+
+If output doesn't look Claude-optimized:
+
+1. **Explicitly enable**:
+   ```bash
+   gsum --claude-optimized
+   ```
+
+2. **Check verbose output**:
+   ```bash
+   gsum --claude-optimized -v
+   # Should show: "🚀 Generating Claude-optimized context"
+   ```
+
+### Plan Command Not Using Cache
+
+For `gsum plan` cache issues:
+
+1. **Use fresh flag to bypass cache**:
+   ```bash
+   gsum plan "task" --fresh
+   ```
+
+2. **Check if cache is stale**:
+   ```bash
+   # Cache expires after 1 hour by default
+   cat .gsum/cache-metadata.json | grep lastUpdate
+   ```
+
 ## Common Error Messages
 
 ### "Cannot find module 'commander'"
