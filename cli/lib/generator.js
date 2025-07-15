@@ -61,15 +61,20 @@ class SummaryGenerator {
       global.log(`📊 Context level: ${contextLevel}`, 'verbose');
     }
 
-    // Check cache for Claude-optimized mode
-    if (claudeOptimized && mode === 'ephemeral') {
+    // Check cache for Claude-optimized mode (unless fresh is requested)
+    if (claudeOptimized && (mode === 'ephemeral' || mode === 'plan') && !options.fresh) {
       const cached = await this.cacheManager.getContextWithFallback(options);
-      if (cached) {
+      if (cached && mode === 'ephemeral') {
         if (global.verbose) {
           global.log('📦 Using cached Claude context', 'info');
         }
         console.log(cached.content);
         return cached.content;
+      } else if (cached && mode === 'plan') {
+        // For plan mode, we'll use cached project info but generate fresh plan
+        if (global.verbose) {
+          global.log('📦 Using cached project analysis for plan generation', 'info');
+        }
       }
     }
     
@@ -121,7 +126,7 @@ class SummaryGenerator {
     // Generate the summary
     let summary;
     try {
-      if (claudeOptimized && mode === 'ephemeral') {
+      if (claudeOptimized && (mode === 'ephemeral' || mode === 'plan')) {
         if (global.verbose) {
           global.log('🚀 Generating Claude-optimized context', 'info');
         }
@@ -201,7 +206,14 @@ class SummaryGenerator {
     } else if (mode === 'plan') {
       // For plan mode, also print and delete
       console.log(summary);
-      await fs.unlink(fullOutputPath);
+      try {
+        await fs.unlink(fullOutputPath);
+      } catch (error) {
+        // File might not exist if using Claude optimization
+        if (error.code !== 'ENOENT') {
+          throw error;
+        }
+      }
       return summary;
     }
   }
@@ -256,7 +268,7 @@ class SummaryGenerator {
 
   buildPrompt(projectInfo, mode, contextLevel = 'standard', outputFile = null) {
     if (mode === 'plan') {
-      return this.buildPlanPrompt(projectInfo);
+      return this.buildPlanPrompt(projectInfo, outputFile);
     }
     
     // Pass context level, focus area, and output file to the prompt builder
@@ -373,9 +385,11 @@ IMPORTANT FALLBACK: If you cannot write to the file, then output the content to 
 REMEMBER: This is optimized for ${contextLevel === 'minimal' ? 'quick context with minimal tokens' : contextLevel === 'standard' ? 'balanced context for AI assistants' : 'complete documentation'}.`;
   }
 
-  buildPlanPrompt(projectInfo) {
+  buildPlanPrompt(projectInfo, outputFile) {
     const task = this.options.task || 'implement a new feature';
-    const outputFile = 'GSUM_PLAN.md';
+    if (!outputFile) {
+      outputFile = 'GSUM_PLAN.md';
+    }
     
     return `You are a senior software engineer tasked with creating an implementation plan.
 

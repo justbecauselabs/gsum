@@ -139,6 +139,9 @@ program
   .description('Generate implementation plan for a specific task')
   .option('-c, --context <file>', 'additional context file')
   .option('-f, --format <format>', 'output format (markdown, json)', 'markdown')
+  .option('--smart-files <n>', 'include N most relevant files for the task', parseInt)
+  .option('--fresh', 'force fresh analysis, ignore cached context')
+  .option('--claude-optimized', 'generate Claude-optimized task plan')
   .action(async (task, options) => {
     try {
       await runPlan(task, options);
