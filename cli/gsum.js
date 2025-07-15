@@ -69,6 +69,7 @@ program
   .option('--claude-execute', 'try to execute with Claude CLI on Gemini quota error')
   .option('--claude-only', 'generate summary directly without using Gemini (works in Claude Code)')
   .option('--claude-optimized', 'generate token-optimized context for Claude Code (auto-enabled in Claude)')
+  .option('--parallel', 'use parallel Gemini processing for comprehensive analysis (auto-enabled for comprehensive mode)')
   .action(async (path, options) => {
     try {
       // Validate context level
@@ -109,6 +110,7 @@ program
   .option('--smart-files <n>', 'include N most relevant files based on git/import analysis', parseInt)
   .option('--claude-only', 'generate summary directly without using Gemini (works in Claude Code)')
   .option('--claude-optimized', 'also generate Claude-optimized context cache in .gsum/')
+  .option('--parallel', 'use parallel Gemini processing for comprehensive analysis (auto-enabled for comprehensive mode)')
   .action(async (path, options) => {
     try {
       // Validate context level
