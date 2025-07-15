@@ -1,4 +1,4 @@
-.PHONY: install install-commands update test clean help
+.PHONY: install install-commands update test clean publish help
 
 # Default target
 help:
@@ -9,6 +9,7 @@ help:
 	@echo "  make install-commands - Install Claude /gsum commands (optional)"
 	@echo "  make update          - Update to latest version"
 	@echo "  make test            - Run test suite"
+	@echo "  make publish          - Publish to npm via CI/CD (auth required)"
 	@echo "  make clean           - Remove installed files"
 	@echo "  make help            - Show this help message"
 
@@ -137,6 +138,70 @@ update:
 test:
 	@echo "🧪 Running gsum tests..."
 	@./test.sh
+
+# Publish to npm via CI/CD
+publish:
+	@echo "📦 Publishing gsum to npm via CI/CD..."
+	@echo ""
+	
+	# Verify npm authentication
+	@if ! npm whoami &> /dev/null; then \
+		echo "❌ Not authenticated with npm"; \
+		echo "   Run: npm login"; \
+		exit 1; \
+	fi
+	
+	# Verify authenticated user is jhurray
+	@if [ "$$(npm whoami)" != "jhurray" ]; then \
+		echo "❌ Wrong npm user: $$(npm whoami)"; \
+		echo "   Expected: jhurray"; \
+		echo "   Run: npm login"; \
+		exit 1; \
+	fi
+	
+	@echo "✅ Authenticated as jhurray"
+	@echo ""
+	
+	# Run tests first
+	@echo "🧪 Running tests before publishing..."
+	@./test.sh
+	@echo "✅ Tests passed"
+	@echo ""
+	
+	# Check git status
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "❌ Uncommitted changes detected"; \
+		echo "   Please commit or stash changes first"; \
+		git status --short; \
+		exit 1; \
+	fi
+	
+	@echo "✅ Working directory clean"
+	@echo ""
+	
+	# Update CHANGELOG.md reminder
+	@echo "📝 Remember to update CHANGELOG.md before publishing"
+	@echo "   Press Enter to continue or Ctrl+C to abort..."
+	@read dummy
+	
+	# Patch version and create tag
+	@echo "🏷️  Patching version and creating tag..."
+	@npm version patch
+	
+	@echo ""
+	@echo "🚀 Pushing tag to trigger CI/CD pipeline..."
+	@git push origin main --tags
+	
+	@echo ""
+	@echo "✅ Tag pushed! GitHub Actions will now:"
+	@echo "   1. Run tests on multiple Node.js versions"
+	@echo "   2. Build and publish to npm"
+	@echo "   3. Create GitHub release"
+	@echo ""
+	@echo "🔗 Monitor progress at:"
+	@echo "   https://github.com/jhurray/gsum/actions"
+	@echo ""
+	@echo "🎉 Once published, test with: npx gsum@latest --version"
 
 # Clean installation
 clean:

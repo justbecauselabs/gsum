@@ -1,14 +1,12 @@
-# npm Publishing Guide for gsum
+# 🚀 NPM Publishing Guide for gsum
+
+This comprehensive guide covers publishing gsum to npm, including setup, automated publishing, and maintenance.
 
 ## Overview
 
-This guide covers how to publish gsum to npm and the setup that enables both npm and git-based installation methods.
+The gsum project is configured for **dual distribution**:
 
-## Current Status ✅
-
-The gsum project is now configured for **dual distribution**:
-
-### 1. npm/npx Installation (Ready to publish)
+### 1. npm/npx Installation
 ```bash
 # One-time usage
 npx gsum
@@ -47,22 +45,57 @@ gsum/
     └── npm-publish.yml      # Automated publishing
 ```
 
-## Publishing Steps
+## Prerequisites
 
-### Prerequisites
+### One-time Setup
 
 1. **npm Account**: Create account at https://npmjs.com
-2. **npm Token**: Generate authentication token
+2. **npm Authentication**: 
+   ```bash
+   npm login
+   npm whoami  # Verify you're logged in
+   ```
 3. **Package Name**: Verify "gsum" is available ✅
 4. **GitHub Secrets**: Add `NPM_TOKEN` to repository secrets
 
-### Manual Publishing
+### Generate npm Token (for CI/CD)
+
+1. Go to https://www.npmjs.com/
+2. Click your profile → Access Tokens
+3. Click "Generate New Token"
+4. Choose "Automation" type
+5. Copy the token (starts with `npm_`)
+6. Add to GitHub Secrets:
+   - Go to https://github.com/jhurray/gsum/settings/secrets/actions
+   - Click "New repository secret"
+   - Name: `NPM_TOKEN`
+   - Value: Paste your npm token
+
+## Publishing Methods
+
+### Method 1: Automated Publishing (Recommended)
+
+This method patches the version, pushes to CI, and lets GitHub Actions handle the publishing:
+
+```bash
+# Use the make command (see Makefile section below)
+make publish
+
+# This will:
+# 1. Verify you're authenticated as jhurray
+# 2. Run tests
+# 3. Patch version (increment patch number)
+# 4. Push tag to trigger CI/CD
+# 5. Let GitHub Actions publish to npm
+```
+
+### Method 2: Manual Publishing
 
 ```bash
 # 1. Update version
 npm version patch  # or minor/major
 
-# 2. Test package
+# 2. Test package locally
 npm pack --dry-run
 npm pack
 npm install -g ./gsum-*.tgz
@@ -74,25 +107,9 @@ gsum fingerprint .
 # 4. Publish to npm
 npm publish
 
-# 5. Create git tag
+# 5. Create git tag and push
 git tag v$(node -p "require('./package.json').version")
 git push origin --tags
-```
-
-### Automated Publishing
-
-The GitHub Actions workflow (`.github/workflows/npm-publish.yml`) automatically publishes to npm when you push a version tag:
-
-```bash
-# Update version and push tag
-npm version patch
-git push origin main --tags
-
-# This triggers:
-# 1. Run tests
-# 2. Build package
-# 3. Publish to npm
-# 4. Create GitHub release
 ```
 
 ## Package Configuration
@@ -139,20 +156,71 @@ mcp-server/
 # - package.json
 ```
 
-## Distribution Benefits
+## Testing Before Publishing
 
-### npm Distribution
-- ✅ **Easy installation**: Single command
-- ✅ **Dependency management**: Automatic
-- ✅ **Version control**: Semantic versioning
-- ✅ **Discoverability**: npm search
-- ✅ **CI/CD friendly**: Works in pipelines
+### Local Testing
+```bash
+# Create test package
+npm pack
 
-### Git Distribution  
-- ✅ **Development flexibility**: Easy modifications
-- ✅ **Latest features**: Always up-to-date
-- ✅ **Full control**: Complete installation process
-- ✅ **Additional tools**: Claude commands, etc.
+# Test installation
+mkdir test-install && cd test-install
+npm install ../gsum-*.tgz
+
+# Test functionality
+npx gsum --version
+npx gsum fingerprint .
+```
+
+### CI Testing
+All tests must pass before publishing:
+- Unit tests (51 comprehensive tests)
+- Node.js compatibility (16.x, 18.x, 20.x)
+- Security audits
+- Linting checks
+
+## Version Management
+
+### Versioning Strategy
+- **Patch** (1.0.x): Bug fixes, minor improvements
+- **Minor** (1.x.0): New features, functionality additions  
+- **Major** (x.0.0): Breaking changes, major refactors
+
+### Release Process
+1. Update `CHANGELOG.md` with new features/fixes
+2. Run `make publish` (automated) or `npm version [patch|minor|major]` (manual)
+3. For manual: Push changes: `git push origin main --tags`
+4. GitHub Actions automatically publishes to npm
+5. Monitor npm downloads and user feedback
+
+## Publishing Checklist
+
+### Pre-publish
+- [ ] Update `CHANGELOG.md`
+- [ ] Run full test suite (`./test.sh`)
+- [ ] Test npm package locally
+- [ ] Verify version number
+- [ ] Check npm registry availability
+- [ ] Verify npm authentication
+
+### Publish (Automated)
+- [ ] Run `make publish`
+- [ ] Monitor GitHub Actions workflow
+- [ ] Verify npm package published
+- [ ] Test installation: `npx gsum`
+
+### Publish (Manual)
+- [ ] `npm version [type]`
+- [ ] `git push origin main --tags`
+- [ ] Monitor GitHub Actions
+- [ ] Verify npm package published
+- [ ] Test installation: `npx gsum`
+
+### Post-publish
+- [ ] Update documentation
+- [ ] Announce on relevant platforms
+- [ ] Monitor downloads and issues
+- [ ] Respond to community feedback
 
 ## Usage Examples
 
@@ -187,65 +255,6 @@ cd gsum && make install
 make install  # reinstall
 ```
 
-## Version Management
-
-### Versioning Strategy
-- **Patch** (1.0.x): Bug fixes, minor improvements
-- **Minor** (1.x.0): New features, functionality additions  
-- **Major** (x.0.0): Breaking changes, major refactors
-
-### Release Process
-1. Update `CHANGELOG.md` with new features/fixes
-2. Run `npm version [patch|minor|major]`
-3. Push changes: `git push origin main --tags`
-4. GitHub Actions automatically publishes to npm
-5. Monitor npm downloads and user feedback
-
-## Testing Before Publishing
-
-### Local Testing
-```bash
-# Create test package
-npm pack
-
-# Test installation
-mkdir test-install && cd test-install
-npm install ../gsum-*.tgz
-
-# Test functionality
-npx gsum --version
-npx gsum fingerprint .
-```
-
-### CI Testing
-All tests must pass before publishing:
-- Unit tests (51 comprehensive tests)
-- Node.js compatibility (16.x, 18.x, 20.x)
-- Security audits
-- Linting checks
-
-## Publishing Checklist
-
-### Pre-publish
-- [ ] Update `CHANGELOG.md`
-- [ ] Run full test suite (`./test.sh`)
-- [ ] Test npm package locally
-- [ ] Verify version number
-- [ ] Check npm registry availability
-
-### Publish
-- [ ] `npm version [type]`
-- [ ] `git push origin main --tags`
-- [ ] Monitor GitHub Actions
-- [ ] Verify npm package published
-- [ ] Test installation: `npx gsum`
-
-### Post-publish
-- [ ] Update documentation
-- [ ] Announce on relevant platforms
-- [ ] Monitor downloads and issues
-- [ ] Respond to community feedback
-
 ## Troubleshooting
 
 ### Common Issues
@@ -271,10 +280,37 @@ chmod +x bin/gsum.js
 cd cli && npm audit fix
 ```
 
-### Support Channels
-- GitHub Issues: Bug reports and feature requests
-- npm package page: Download stats and versions
-- Documentation: README and docs/ folder
+**5. "Cannot publish over existing version"**
+```bash
+npm version patch
+npm publish
+```
+
+**6. "E403 Forbidden"**
+- Check you're logged in: `npm whoami`
+- Verify package name in package.json
+- Ensure you have publish rights
+
+### First Time Publishing Steps
+
+```bash
+# One-time setup
+npm login
+
+# Verify availability
+npm view gsum  # Should show 404 - this is good!
+
+# Test locally
+npm pack
+npm install -g ./gsum-*.tgz
+gsum --version
+
+# Publish
+npm publish
+
+# Verify
+npx gsum --version
+```
 
 ## Success Metrics
 
@@ -283,6 +319,53 @@ Track these metrics after npm publishing:
 - **GitHub stars**: Repository popularity
 - **Issue quality**: User experience feedback
 - **CI/CD adoption**: Usage in build pipelines
+
+## Distribution Benefits
+
+### npm Distribution
+- ✅ **Easy installation**: Single command
+- ✅ **Dependency management**: Automatic
+- ✅ **Version control**: Semantic versioning
+- ✅ **Discoverability**: npm search
+- ✅ **CI/CD friendly**: Works in pipelines
+
+### Git Distribution  
+- ✅ **Development flexibility**: Easy modifications
+- ✅ **Latest features**: Always up-to-date
+- ✅ **Full control**: Complete installation process
+- ✅ **Additional tools**: Claude commands, etc.
+
+## Post-Publish Tasks
+
+### Update GitHub README
+
+Add npm badges:
+```markdown
+# gsum - AI-Powered Codebase Summarization CLI
+
+[![npm version](https://badge.fury.io/js/gsum.svg)](https://www.npmjs.com/package/gsum)
+[![npm downloads](https://img.shields.io/npm/dm/gsum.svg)](https://www.npmjs.com/package/gsum)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+```
+
+### Monitor Usage
+- **npm stats**: https://www.npmjs.com/package/gsum
+- **npm-stat.com**: https://npm-stat.com/charts.html?package=gsum
+- **GitHub issues**: Watch for user feedback
+- **Weekly downloads**: Track growth
+
+## Important Notes
+
+### npm Policies
+- **Cannot unpublish** after 24 hours (except security issues)
+- Package names are **permanent** - "gsum" is yours forever
+- Deprecated packages still take the name
+
+### Version 0.1.0+
+- Signals development stage (semantic versioning)
+- Sets appropriate expectations
+- Allows room for breaking changes before 1.0.0
+- Future updates follow semver
 
 ---
 
