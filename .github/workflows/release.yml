@@ -26,6 +26,7 @@ jobs:
     - name: Run tests
       run: |
         make install
+        export PATH="$HOME/bin:$PATH"
         ./test.sh
         
     - name: Create Release
