@@ -264,6 +264,13 @@ run_test "plan with claude optimization" "gsum plan 'test task' --claude-optimiz
 run_test_output "claude environment detection" "CLAUDE_CODE=1 gsum fingerprint . | head -5" "Codebase Fingerprint"
 
 echo
+echo -e "${BLUE}🚀 Parallel Processing Tests${NC}"
+run_test "parallel flag syntax" "gsum --parallel --help"
+run_test "parallel with context level" "gsum --parallel --context-level comprehensive --help"
+run_test "save with parallel" "gsum save --parallel --help"
+run_test "parallel flag combination" "gsum --parallel --smart-files 5 --context-level standard --help"
+
+echo
 echo -e "${BLUE}📦 Smart Caching Tests${NC}"
 # Test cache functionality without API calls - focus on syntax validation first
 run_test "cache directory creation syntax" "gsum save --help | grep -q 'force\\|cache'"
