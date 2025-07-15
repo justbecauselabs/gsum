@@ -76,6 +76,36 @@ const FOCUS_PATTERNS = {
     extensions: ['.sql', '.prisma', '.js', '.ts', '.py'],
     keywords: ['model', 'schema', 'migration', 'entity', 'repository', 'database', 'table', 'query']
   },
+  authentication: {
+    include: ['auth', 'authentication', 'login', 'user', 'users', 'session', 'jwt', 'oauth', 'middleware'],
+    extensions: ['.js', '.ts', '.py', '.go', '.java', '.rb'],
+    keywords: ['auth', 'login', 'register', 'signin', 'signup', 'jwt', 'token', 'session', 'oauth', 'passport', 'user', 'permission', 'role', 'authorize', 'authenticate']
+  },
+  security: {
+    include: ['security', 'auth', 'validation', 'sanitization', 'middleware', 'guards', 'rbac'],
+    extensions: ['.js', '.ts', '.py', '.go', '.java', '.rb'],
+    keywords: ['security', 'validate', 'sanitize', 'encrypt', 'decrypt', 'hash', 'csrf', 'xss', 'cors', 'permission', 'rbac', 'acl', 'guard', 'policy']
+  },
+  performance: {
+    include: ['cache', 'optimization', 'performance', 'monitoring', 'metrics', 'profiling'],
+    extensions: ['.js', '.ts', '.py', '.go', '.java', '.rb'],
+    keywords: ['cache', 'optimize', 'performance', 'benchmark', 'profiling', 'metrics', 'monitoring', 'lazy', 'memoize', 'throttle', 'debounce']
+  },
+  configuration: {
+    include: ['config', 'configuration', 'settings', 'env', 'environment'],
+    extensions: ['.json', '.yml', '.yaml', '.env', '.config.js', '.config.ts', '.toml', '.ini'],
+    keywords: ['config', 'configuration', 'settings', 'environment', 'env', 'variable', 'constant', 'parameter']
+  },
+  logging: {
+    include: ['logs', 'logging', 'logger', 'monitoring', 'observability'],
+    extensions: ['.js', '.ts', '.py', '.go', '.java', '.rb'],
+    keywords: ['log', 'logger', 'logging', 'trace', 'debug', 'info', 'warn', 'error', 'monitor', 'observability']
+  },
+  infrastructure: {
+    include: ['infrastructure', 'terraform', 'cloudformation', 'pulumi', 'ansible', 'k8s', 'kubernetes', 'helm'],
+    extensions: ['.tf', '.tfvars', '.yml', '.yaml', '.json', '.hcl'],
+    keywords: ['infrastructure', 'terraform', 'cloudformation', 'pulumi', 'provision', 'resource', 'deployment', 'cluster']
+  },
   testing: {
     include: ['test', 'tests', '__tests__', 'spec', 'e2e', 'integration', 'unit'],
     extensions: ['.test.js', '.spec.js', '.test.ts', '.spec.ts', '.test.jsx', '.test.tsx', '_test.go', '_test.py'],

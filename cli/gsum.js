@@ -63,7 +63,7 @@ program
   .option('--exclude <patterns>', 'exclude file patterns (comma-separated)')
   .option('--no-git', 'disable git integration')
   .option('--context-level <level>', 'context level: minimal, standard, comprehensive', 'standard')
-  .option('--focus <area>', 'focus on specific area: frontend, api, database, testing, deployment, tooling, documentation')
+  .option('--focus <area>', 'focus on specific area: frontend, api, database, authentication, security, performance, configuration, logging, infrastructure, testing, deployment, tooling, documentation')
   .option('--smart-files <n>', 'include N most relevant files based on git/import analysis', parseInt)
   .option('--fallback', 'generate Claude fallback prompt on Gemini quota error')
   .option('--claude-execute', 'try to execute with Claude CLI on Gemini quota error')
@@ -79,7 +79,7 @@ program
       }
       
       // Validate focus area
-      const validFocusAreas = ['frontend', 'api', 'database', 'testing', 'deployment', 'tooling', 'documentation'];
+      const validFocusAreas = ['frontend', 'api', 'database', 'authentication', 'security', 'performance', 'configuration', 'logging', 'infrastructure', 'testing', 'deployment', 'tooling', 'documentation'];
       if (options.focus && !validFocusAreas.includes(options.focus)) {
         throw new Error(`Invalid focus area: ${options.focus}. Must be one of: ${validFocusAreas.join(', ')}`);
       }
@@ -106,7 +106,7 @@ program
   .option('--exclude <patterns>', 'exclude file patterns (comma-separated)')
   .option('--no-git', 'disable git integration')
   .option('--context-level <level>', 'context level: minimal, standard, comprehensive', 'comprehensive')
-  .option('--focus <area>', 'focus on specific area: frontend, api, database, testing, deployment, tooling, documentation')
+  .option('--focus <area>', 'focus on specific area: frontend, api, database, authentication, security, performance, configuration, logging, infrastructure, testing, deployment, tooling, documentation')
   .option('--smart-files <n>', 'include N most relevant files based on git/import analysis', parseInt)
   .option('--claude-only', 'generate summary directly without using Gemini (works in Claude Code)')
   .option('--claude-optimized', 'also generate Claude-optimized context cache in .gsum/')
@@ -120,7 +120,7 @@ program
       }
       
       // Validate focus area
-      const validFocusAreas = ['frontend', 'api', 'database', 'testing', 'deployment', 'tooling', 'documentation'];
+      const validFocusAreas = ['frontend', 'api', 'database', 'authentication', 'security', 'performance', 'configuration', 'logging', 'infrastructure', 'testing', 'deployment', 'tooling', 'documentation'];
       if (options.focus && !validFocusAreas.includes(options.focus)) {
         throw new Error(`Invalid focus area: ${options.focus}. Must be one of: ${validFocusAreas.join(', ')}`);
       }

@@ -115,6 +115,19 @@ install-commands:
 	@echo '' >> ~/.claude/commands/gsum-fingerprint.md
 	@echo '!gsum fingerprint $$ARGUMENTS' >> ~/.claude/commands/gsum-fingerprint.md
 	
+	# Create /gsum-interactive command
+	@echo '---' > ~/.claude/commands/gsum-interactive.md
+	@echo 'description: Interactive guided mode for gsum - walks you through configuring the perfect summary with optimal settings, context levels, focus areas, and advanced options.' >> ~/.claude/commands/gsum-interactive.md
+	@echo 'allowed-tools: [bash, Read, Write, Grep, Glob, LS]' >> ~/.claude/commands/gsum-interactive.md
+	@echo '---' >> ~/.claude/commands/gsum-interactive.md
+	@echo '' >> ~/.claude/commands/gsum-interactive.md
+	@echo 'Starting gsum interactive mode v1.0...' >> ~/.claude/commands/gsum-interactive.md
+	@echo '' >> ~/.claude/commands/gsum-interactive.md
+	@echo '# Perfect for first-time users or complex configurations' >> ~/.claude/commands/gsum-interactive.md
+	@echo '# Guides you through all options step-by-step' >> ~/.claude/commands/gsum-interactive.md
+	@echo '' >> ~/.claude/commands/gsum-interactive.md
+	@echo '!gsum interactive' >> ~/.claude/commands/gsum-interactive.md
+	
 	@echo ""
 	@echo "✅ Claude commands installed successfully!"
 	@echo ""
@@ -123,6 +136,7 @@ install-commands:
 	@echo "  /gsum-save        - Create/update ARCHITECTURE.gsum.md"
 	@echo "  /gsum-plan        - Generate implementation plan"
 	@echo "  /gsum-fingerprint - Ultra-compressed project overview"
+	@echo "  /gsum-interactive - Guided configuration mode"
 
 # Update to latest version
 update:
@@ -143,6 +157,7 @@ clean:
 	@rm -f ~/.claude/commands/gsum-save.md
 	@rm -f ~/.claude/commands/gsum-plan.md
 	@rm -f ~/.claude/commands/gsum-fingerprint.md
+	@rm -f ~/.claude/commands/gsum-interactive.md
 	@rm -rf ~/bin/gsum-mcp-server
 	@echo "✅ gsum has been removed"
 	@echo "   Note: You may want to remove aliases from your shell RC file"
