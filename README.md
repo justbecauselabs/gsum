@@ -16,6 +16,9 @@ gsum analyzes your entire codebase and generates comprehensive, AI-powered docum
 ## Quick Start
 
 ```bash
+# 🔥 NEW USER? Start here! Zero learning curve:
+gsum interactive
+
 # Try gsum without installing
 npx gsum
 
@@ -27,9 +30,6 @@ gsum
 
 # Focus on frontend files
 gsum --focus frontend
-
-# Interactive guided mode
-gsum interactive
 ```
 
 ## Features
@@ -45,7 +45,7 @@ gsum interactive
 - 📊 **Context Levels**: Choose minimal (2-3k), standard (5-7k), or comprehensive (10k+) summaries
 - 🔍 **Focus Areas**: Target specific areas like frontend, API, database, testing, deployment, tooling, or documentation
 - 📂 **Path-Specific**: Analyze specific directories instead of entire codebase
-- 🎮 **Interactive Mode**: Guided configuration for optimal results
+- 🎮 **Interactive Mode**: Zero-learning-curve guided configuration with intelligent project analysis
 - 🧠 **Smart File Inclusion**: Automatically include the most relevant files based on git history and imports
 - 🗺️ **Codebase Fingerprint**: Ultra-compressed project overview in seconds
 - ⚡ **Claude Optimization**: Token-efficient context generation for Claude Code (auto-enabled)
@@ -98,6 +98,7 @@ This enables:
 - `/gsum` - Generate ephemeral summary
 - `/gsum-save` - Create/update persistent summary
 - `/gsum-plan <task>` - Generate implementation plans
+- `/gsum-interactive` - 🔥 **Interactive guided mode** (works in any repo!)
 
 **Note**: Claude commands are only available with git installation. Commands are always overwritten on install/update to ensure you have the latest version.
 
@@ -377,7 +378,7 @@ gsum plan "add auth" --claude-optimized
 
 ### Interactive Mode 🎮
 
-Not sure which options to use? Let gsum guide you:
+**The most user-friendly way to use gsum!** Not sure which options to use? Let gsum guide you step-by-step:
 
 ```bash
 gsum interactive
@@ -385,14 +386,30 @@ gsum interactive
 gsum i
 ```
 
-The interactive mode will walk you through:
-- Choosing between ephemeral or persistent summaries
-- Selecting the right context level
-- Picking a focus area if needed
-- Configuring advanced options
-- Reviewing your choices before execution
+**🔥 What makes Interactive Mode special:**
 
-Perfect for first-time users or complex configurations!
+- **🧠 Smart Analysis First** - Analyzes your project structure and suggests optimal settings
+- **🎯 Guided Questions** - Asks you exactly 3 simple questions, one at a time
+- **✨ Intelligent Defaults** - Recommends the best options based on your tech stack
+- **🔧 Perfect Command Generation** - Builds the exact gsum command for your needs
+- **✅ Safety First** - Shows you the command before executing it
+- **⚡ Zero Learning Curve** - No need to memorize CLI flags or options
+
+**The interactive experience:**
+1. **📊 Project Fingerprint** - Instantly scans your repo structure and tech stack
+2. **❓ Question 1** - Ephemeral (chat) or persistent (file) summary?
+3. **❓ Question 2** - How detailed? (minimal/standard/comprehensive)
+4. **❓ Question 3** - Focus area? (frontend/API/database/all areas/etc.)
+5. **🛠️ Command Preview** - Shows the exact command it will run
+6. **🚀 One-Click Execute** - Runs your perfectly configured gsum command
+
+**Perfect for:**
+- 🆕 **First-time users** - Learn gsum without reading docs
+- 🤔 **Complex projects** - Get intelligent recommendations 
+- ⚡ **Quick setup** - Faster than figuring out CLI flags
+- 🎯 **Optimal results** - Ensures you get the best possible summary
+
+Interactive mode eliminates the guesswork and ensures you always get the perfect gsum configuration for your project!
 
 ### Smart File Inclusion 🧠
 
