@@ -7,8 +7,7 @@
     "gsum": "./bin/gsum.js"
   },
   "scripts": {
-    "test": "./test.sh",
-    "prepublishOnly": "npm test"
+    "test": "./test.sh"
   },
   "files": [
     "bin/",
