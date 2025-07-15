@@ -103,6 +103,29 @@ This enables:
 
 ## How It Works
 
+### LLM Provider Selection
+
+gsum automatically adapts its behavior based on your environment:
+
+**Outside Claude Code Environment:**
+- Uses **Gemini CLI** (`gemini --yolo` command) as the default LLM provider
+- Generates comprehensive markdown documentation via Gemini API
+- Requires Gemini CLI to be installed and configured separately
+- Full project analysis with all documentation sections
+- Standard token limits (no aggressive optimization)
+
+**Inside Claude Code Environment:**
+- Auto-detects Claude Code via `CLAUDE_CODE` or `CLAUDE_DESKTOP_TOOLS_ACTIVE` environment variables
+- Switches to **Claude-optimized mode** automatically
+- Generates token-efficient context (3k tokens vs 5-7k standard)
+- Uses smart caching for faster subsequent runs
+- Minimal, structured output designed for Claude consumption
+
+**Fallback Options:**
+- `--fallback`: Generates prompt you can copy to Claude manually
+- `--claude-execute`: Attempts to use local Claude CLI if installed
+- `--claude-only`: Bypasses LLM entirely, generates analysis data only
+
 ### 1. Analysis Phase (Local)
 gsum analyzes your codebase locally:
 - 📁 Traverses directory structure (respects .gitignore patterns)
@@ -113,16 +136,22 @@ gsum analyzes your codebase locally:
 - 🌿 Captures git information (branch, last commit)
 
 ### 2. Generation Phase (AI-Powered)
-gsum creates a detailed prompt and sends it to Gemini:
-- 📝 Builds prompt tailored to your chosen context level
-- 🤖 Gemini analyzes and generates documentation
+**Gemini Mode (Default):**
+- 📝 Builds comprehensive prompt for Gemini CLI
+- 🤖 Gemini analyzes and generates full documentation
 - 📄 Returns documentation sized for your needs (2-3k to 10k+ words)
 
+**Claude Code Mode (Auto-Enabled):**
+- 📝 Builds token-optimized context with smart file selection
+- 🤖 Returns structured, minimal context for Claude consumption
+- 💾 Caches context for instant reuse on subsequent runs
+
 ### 3. Output Phase
-Depending on the command:
+Depending on the command and environment:
 - **Default**: Prints to terminal (ephemeral)
 - **Save**: Writes to file with git metadata
 - **Plan**: Outputs actionable implementation steps
+- **Claude Code**: Returns optimized context for AI assistant consumption
 
 ## Usage
 
