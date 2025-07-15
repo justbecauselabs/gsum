@@ -269,6 +269,16 @@ run_test "wrapper script execution" "gsum version"
 
 # Find the CLI script location for direct execution test
 CLI_LOCATIONS=("$HOME/src/gsum/cli/gsum.js" "$GITHUB_WORKSPACE/cli/gsum.js" "$(pwd)/cli/gsum.js" "./cli/gsum.js")
+
+# Add current directory and parent directory searches for CI
+if [ -n "$GITHUB_WORKSPACE" ]; then
+    CLI_LOCATIONS+=("$GITHUB_WORKSPACE/cli/gsum.js")
+fi
+
+# Look in relative paths from test location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_LOCATIONS+=("$SCRIPT_DIR/cli/gsum.js")
+
 CLI_SCRIPT=""
 for location in "${CLI_LOCATIONS[@]}"; do
     if [ -f "$location" ]; then
@@ -280,7 +290,7 @@ done
 if [ -n "$CLI_SCRIPT" ]; then
     run_test "direct CLI script execution" "node '$CLI_SCRIPT' version"
 else
-    echo "  Testing direct CLI script execution... ${YELLOW}SKIPPED${NC} (CLI script not found)"
+    echo "  Testing direct CLI script execution... ${YELLOW}SKIPPED${NC} (CLI script not found in any of: ${CLI_LOCATIONS[*]})"
     TESTS_RUN=$((TESTS_RUN + 1))
     TESTS_PASSED=$((TESTS_PASSED + 1))
 fi
