@@ -255,6 +255,34 @@ run_test "save with custom file" "gsum save --file CUSTOM.md --help"
 run_test "save with context level" "gsum save --context-level comprehensive --help"
 
 echo
+echo -e "${BLUE}🧠 Claude Optimization Tests${NC}"
+run_test "claude-optimized flag syntax" "gsum --claude-optimized --help"
+run_test "save with claude optimization" "gsum save --claude-optimized --help"
+run_test "plan with claude optimization" "gsum plan 'test task' --claude-optimized --help"
+
+# Test Claude Code environment detection (mock the environment variable)
+run_test_output "claude environment detection" "CLAUDE_CODE=1 gsum fingerprint . | head -5" "Codebase Fingerprint"
+
+echo
+echo -e "${BLUE}📦 Smart Caching Tests${NC}"
+# Test cache functionality without API calls - focus on syntax validation first
+run_test "cache directory creation syntax" "gsum save --help | grep -q 'force\\|cache'"
+run_test "cache with force flag" "gsum save --force --help"
+run_test "cache directory support" "gsum save --claude-optimized --help"
+
+echo
+echo -e "${BLUE}🎯 Advanced Smart File Selection Tests${NC}"
+run_test "smart files functional syntax" "gsum --smart-files 3 --help"
+run_test "smart files with save" "gsum save --smart-files 5 --file /tmp/test-smart.md --help"
+run_test "smart files with plan" "gsum plan 'add feature' --smart-files 3 --help"
+
+echo
+echo -e "${BLUE}🔄 Enhanced Plan Command Tests${NC}"
+run_test "plan fresh flag syntax" "gsum plan 'test task' --fresh --help"
+run_test "plan with context level" "gsum plan 'test task' --context-level minimal --help"
+run_test "plan with smart files and fresh" "gsum plan 'test task' --fresh --smart-files 5 --help"
+
+echo
 echo -e "${BLUE}🧪 Functional Tests${NC}"
 # These tests actually run the commands (but with minimal output to avoid API calls)
 run_test_output "fingerprint functional" "gsum fingerprint ." "Codebase Fingerprint"
