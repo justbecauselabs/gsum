@@ -151,8 +151,8 @@ publish:
 		exit 1; \
 	fi
 	
-	# Verify authenticated user is justbecauselabs
-	@if [ "$$(npm whoami)" != "justbecauselabs" ]; then \
+	# Verify authenticated user is jhurray
+	@if [ "$$(npm whoami)" != "jhurray" ]; then \
 		echo "❌ Wrong npm user: $$(npm whoami)"; \
 		echo "   Expected: justbecauselabs"; \
 		echo "   Run: npm login"; \
